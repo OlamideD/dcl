@@ -6,3 +6,8 @@ DCL
 
 MIT# DCL
 # dcl
+
+
+Install:
+a) bench get-app dcl https://github.com/OlamideD/dcl.git
+b) bench --site {site name} install-app dcl
