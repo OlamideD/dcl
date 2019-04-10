@@ -89,7 +89,7 @@ C0003086224</p>
 <div class="row">
     <div class="col-xs-8">
         <table class="table">
-            <tr><td><h3>Take Home Pay</h3></td><td align="right"><h3>{{ doc.net_pay }}</h3></td></tr>
+            <tr><td><h3>Take Home Pay</h3></td><td align="right"><h3>{{ doc.get_formatted("net_pay", doc) }}</h3></td></tr>
             </table>
         </div>
     </div>
