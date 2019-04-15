@@ -3,7 +3,22 @@
 
 frappe.ui.form.on('DCL Appraisal Entry', {
 	refresh: function(frm) {
+		cur_frm.set_value("appraiser",frappe.session.user);
+	},
+	name1:function (frm) {
+		frappe.call({
 
+         "method": "frappe.client.get",
+          args: {
+          doctype: "Employee",
+          name:cur_frm.doc.name1
+          },
+
+        callback: function (data)
+        {
+            cur_frm.set_value("position",data.message.designation);
+        }
+    });
 	},
 	appraisal_template:function (frm) {
 		if (frm.doc.appraisal_template) {
@@ -61,3 +76,33 @@ frappe.ui.form.on('DCL Appraisal Entry', {
 		}
 	}
 });
+
+
+cur_frm.cscript.employee_rating = function( doc, cdt, cdn) {
+
+    var d = locals[cdt][cdn];
+    if (d.employee_rating && d.supver_rating && d.mgt_rating) {
+        d.average_rating = (parseInt(d.employee_rating) + parseInt(d.supver_rating) + parseInt(d.mgt_rating)) / 3;
+        refresh_field("kpi");
+    }
+  };
+
+
+  cur_frm.cscript.supver_rating = function( doc, cdt, cdn) {
+
+    var d = locals[cdt][cdn];
+    if (d.employee_rating && d.supver_rating && d.mgt_rating) {
+        d.average_rating = (parseInt(d.employee_rating) + parseInt(d.supver_rating) + parseInt(d.mgt_rating)) / 3;
+        refresh_field("kpi");
+    }
+  };
+
+
+  cur_frm.cscript.mgt_rating = function( doc, cdt, cdn) {
+
+    var d = locals[cdt][cdn];
+    if (d.employee_rating && d.supver_rating && d.mgt_rating) {
+        d.average_rating = (parseInt(d.employee_rating) + parseInt(d.supver_rating) + parseInt(d.mgt_rating)) / 3;
+        refresh_field("kpi");
+    }
+  };
