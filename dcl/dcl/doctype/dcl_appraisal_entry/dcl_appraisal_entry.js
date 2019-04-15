@@ -4,6 +4,7 @@
 frappe.ui.form.on('DCL Appraisal Entry', {
 	refresh: function(frm) {
 		cur_frm.set_value("appraiser",frappe.session.user);
+
 	},
 	name1:function (frm) {
 		frappe.call({
