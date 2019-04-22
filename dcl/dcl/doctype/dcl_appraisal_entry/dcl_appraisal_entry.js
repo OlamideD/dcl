@@ -18,6 +18,7 @@ frappe.ui.form.on('DCL Appraisal Entry', {
         callback: function (data)
         {
             cur_frm.set_value("position",data.message.designation);
+            cur_frm.set_value("employee_name",data.message.employee_name);
         }
     });
 	},

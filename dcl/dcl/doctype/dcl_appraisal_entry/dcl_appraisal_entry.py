@@ -8,6 +8,8 @@ from frappe.model.document import Document
 
 
 class DCLAppraisalEntry(Document):
+    def autoname(self):
+        self.name = self.employee_name + '/' +str(self.date)
     def validate(self):
         total = 0.0
         scores = 0.0
