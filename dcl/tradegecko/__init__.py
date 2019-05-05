@@ -96,8 +96,8 @@ def gecko_po():
     # tg = TradeGeckoRestClient(access_token, refresh_token)
     tg = TradeGeckoRestClient(access_token)
     # print tg.company.all()['companies'][0]
-    orders = tg.purchase_order.all(limit=250)['purchase_orders']
-    # orders = tg.purchase_order.filter(order_number="PO0276")['purchase_orders']
+    # orders = tg.purchase_order.all(limit=250)['purchase_orders']
+    orders = tg.purchase_order.filter(order_number="PO0346")['purchase_orders']
 
     # print orders
     income_accounts = "5111 - Cost of Goods Sold - DCL"
@@ -112,8 +112,8 @@ def gecko_po():
 
 
         exists_po = frappe.db.sql("""SELECT Count(*) FROM `tabPurchase Order` WHERE name=%s""",(o['order_number']))
-        if exists_po[0][0] > 0:
-            continue
+        # if exists_po[0][0] > 0:
+        #     continue
 
         print o
 
@@ -144,8 +144,12 @@ def gecko_po():
 
 
         procured_items = []
-        line_items = tg.purchase_order_line_item.filter(ids=o['purchase_order_line_item_ids'])['purchase_order_line_items']
+        # print o['purchase_order_line_item_ids']
+        # print o['order_number']
+        # line_items = tg.purchase_order_line_item.filter(purchase_order_id=o['order_number'])['purchase_order_line_items']
+        line_items = tg.purchase_order_line_item.filter(purchase_order_id=o['id'])
         # print line_items
+        line_items = line_items['purchase_order_line_items']
         for line_item in line_items:
             # line_item = tg.purchase_order_line_item.get(i)['purchase_order_line_item']
             # print line_item
@@ -192,7 +196,8 @@ def gecko_po():
 
             found_line = 0
             for exist_line_item in SI_items:
-                if exist_line_item['item_code'] == variant["product_name"]:
+                if exist_line_item['item_code'] == variant["product_name"] or \
+                                exist_line_item['item_code'] == variant["sku"]:
                     found_line = 1
                     exist_line_item.update({"qty":round(float(exist_line_item["qty"])+float(line_item["quantity"]))})
 
@@ -212,6 +217,24 @@ def gecko_po():
                 }
                 # print SI_item
                 SI_items.append(SI_item)
+            else:
+                if not SI_items:
+                    SI_item = {
+                        "description": item_description,
+                        "item_name": item_name,
+                        "item_code": item_code,
+                        "rate": line_item["price"],
+                        "conversion_factor": 1,
+                        "uom": "Nos",
+                        "expense_account": income_accounts,
+                        "cost_center": cost_centers,
+                        "qty": round(float(line_item["quantity"])),
+                        "warehouse": to_warehouse['label'] + " - DCL",  # Location
+                        "OrderDate": o["created_at"]
+                    }
+                    # print SI_item
+                    SI_items.append(SI_item)
+            print SI_items
 
 
         supplier_company = tg.company.get(o['company_id'])['company']
@@ -257,7 +280,7 @@ def gecko_po():
                    "transaction_date": created_at.date(),
                    "items": SI_items,
                    "docstatus": status_map[o["status"]],
-                   "name": o["order_number"],
+                   # "name": o["order_number"],
                    "due_date": due_at.date(),
                    "delivery_date": created_at.date(),
                    "inflow_file":o["order_number"],
@@ -265,7 +288,8 @@ def gecko_po():
                    "conversion_rate":currency_rate,
                    # "workflow_state":status_map[o["status"]]
                    }
-        # print "****************** Sales Invoice ******************"
+        print "****************** Sales Invoice ******************"
+        print o['order_number']
         # print SI_dict
         SI_created = frappe.get_doc(SI_dict).insert()
         rename_doc("Purchase Order", SI_created.name, o['order_number'], force=True)
