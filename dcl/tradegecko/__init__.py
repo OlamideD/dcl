@@ -257,7 +257,7 @@ def gecko_po():
                    "transaction_date": created_at.date(),
                    "items": SI_items,
                    "docstatus": status_map[o["status"]],
-                   "name": o["id"],
+                   "name": o["order_number"],
                    "due_date": due_at.date(),
                    "delivery_date": created_at.date(),
                    "inflow_file":o["order_number"],
