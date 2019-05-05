@@ -52,7 +52,7 @@ def make_delivery(fulfilled_items,current_order,datepaid):
             if dnr_item.item_code == item['item_code']:
                 found = 1
                 del fulfilled_items[i]
-                dnr_item.qty = round(item['quantity'])
+                dnr_item.qty = round(float(item['quantity']))
         if found == 0:
             remove_rows.append(dnr_item)
 
