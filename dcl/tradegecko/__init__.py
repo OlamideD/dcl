@@ -200,8 +200,8 @@ def gecko_po():
             print "unpaid"
         print o["order_number"]
         make_invoice(o["order_number"],created_at,paid)
-        break
-
+        # break
+        frappe.db.commit()
 
 """
 Consumer Key: 6QFRVEGFH8ODSCDVPVSASMJ0JUWYLG
