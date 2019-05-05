@@ -62,8 +62,11 @@ def make_delivery(fulfilled_items,current_order,datepaid):
         dn.remove(r)
     dn.posting_date = datepaid.date()
     dn.posting_time = str(datepaid.time())
-    dn.save()
-    dn.submit()
+    if dn.items:
+        dn.save()
+        dn.submit()
+    else:
+        print "no items."
 
 # bench --site dcl2 execute dcl.tradegecko.currencies
 def currencies():
@@ -93,8 +96,8 @@ def gecko_po():
     # tg = TradeGeckoRestClient(access_token, refresh_token)
     tg = TradeGeckoRestClient(access_token)
     # print tg.company.all()['companies'][0]
-    orders = tg.purchase_order.all(limit=250)['purchase_orders']
-    # orders = tg.purchase_order.filter(order_number="PO0341")['purchase_orders']
+    # orders = tg.purchase_order.all(limit=250)['purchase_orders']
+    orders = tg.purchase_order.filter(order_number="PO0276")['purchase_orders']
 
     # print orders
     income_accounts = "5111 - Cost of Goods Sold - DCL"
@@ -109,8 +112,8 @@ def gecko_po():
 
 
         exists_po = frappe.db.sql("""SELECT Count(*) FROM `tabPurchase Order` WHERE name=%s""",(o['order_number']))
-        if exists_po[0][0] > 0:
-            continue
+        # if exists_po[0][0] > 0:
+        #     continue
 
         print o
 
