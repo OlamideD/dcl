@@ -78,8 +78,8 @@ def gecko_po():
 
     for o in orders:
         # if o["status"] == "draft" or o["status"] == "received": #draft,received
-        if o["status"] == "draft" or o["status"] == "active": #draft,received, active
-            continue
+        # if o["status"] == "draft" or o["status"] == "active": #draft,received, active
+        #     continue
         print o
 
         remove_imported_data(o["order_number"])
