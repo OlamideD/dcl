@@ -52,7 +52,7 @@ def make_delivery(fulfilled_items,current_order,datepaid):
             if dnr_item.item_code == item['item_code']:
                 found = 1
                 del fulfilled_items[i]
-                dnr_item.qty = item['quantity']
+                dnr_item.qty = round(item['quantity'])
         if found == 0:
             remove_rows.append(dnr_item)
 
@@ -192,7 +192,7 @@ def gecko_po():
             for exist_line_item in SI_items:
                 if exist_line_item['item_code'] == variant["product_name"]:
                     found_line = 1
-                    exist_line_item.update({"qty":float(exist_line_item["qty"])+float(line_item["quantity"])})
+                    exist_line_item.update({"qty":round(float(exist_line_item["qty"])+float(line_item["quantity"]))})
 
             if not found_line:
                 SI_item = {
