@@ -112,8 +112,8 @@ def gecko_po():
 
 
         exists_po = frappe.db.sql("""SELECT Count(*) FROM `tabPurchase Order` WHERE name=%s""",(o['order_number']))
-        # if exists_po[0][0] > 0:
-        #     continue
+        if exists_po[0][0] > 0:
+            continue
 
         print o
 
