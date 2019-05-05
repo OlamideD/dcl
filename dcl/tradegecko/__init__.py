@@ -234,7 +234,7 @@ def gecko_po():
                     }
                     # print SI_item
                     SI_items.append(SI_item)
-            print SI_items
+            # print SI_items
 
 
         supplier_company = tg.company.get(o['company_id'])['company']
