@@ -93,7 +93,7 @@ def gecko_po():
     # tg = TradeGeckoRestClient(access_token, refresh_token)
     tg = TradeGeckoRestClient(access_token)
     # print tg.company.all()['companies'][0]
-    orders = tg.purchase_order.all()['purchase_orders']
+    orders = tg.purchase_order.all(limit=250)['purchase_orders']
     # orders = tg.purchase_order.filter(order_number="PO0348")['purchase_orders']
 
     # print orders

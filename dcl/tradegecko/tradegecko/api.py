@@ -55,9 +55,9 @@ class ApiEndpoint(object):
         return json.dumps({self._data_name: data})
 
     # all records
-    def all(self, page=1):
+    def all(self, page=1,limit=1):
         uri = self.uri % ''
-        params = {'page': page}
+        params = {'page': page,'limit':limit}
         if self._send_request('GET', uri, params=params) == 200:
             return self.rsp.json()
         else:
