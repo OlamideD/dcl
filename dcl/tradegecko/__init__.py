@@ -60,6 +60,8 @@ def currencies():
     orders = tg.currency.all()['currencies']
     print orders
 
+# status_map = {"draft":"Pending Approval","received":"Completed","active":"Completed"}
+status_map = {"draft":0,"received":1,"active":1}
 
 # bench --site dcl2 execute dcl.tradegecko.test_gecko
 def gecko_po():
@@ -76,8 +78,8 @@ def gecko_po():
     # tg = TradeGeckoRestClient(access_token, refresh_token)
     tg = TradeGeckoRestClient(access_token)
     # print tg.company.all()['companies'][0]
-    orders = tg.purchase_order.all()['purchase_orders']
-    # orders = tg.purchase_order.filter(order_number="PO0445")['purchase_orders']
+    # orders = tg.purchase_order.all()['purchase_orders']
+    orders = tg.purchase_order.filter(order_number="PO0443")['purchase_orders']
 
     # print orders
     income_accounts = "5111 - Cost of Goods Sold - DCL"
@@ -110,7 +112,10 @@ def gecko_po():
 
         from dateutil import parser
         created_at = parser.parse(o["created_at"])
-        received_at = parser.parse(o["received_at"])
+        if o["received_at"]:
+            received_at = parser.parse(o["received_at"])
+        else:
+            received_at = ""
         due_at = parser.parse(o["due_at"])
 
 
@@ -196,7 +201,7 @@ def gecko_po():
         xecd = XecdClient('dcllaboratoryproductsltd694148295', '606sp0hi0kespeghmd41b3vus9')
         currency_rate = xecd.historic_rate_period(1, currency['iso'],
                                                   "GHS", str(created_at.date()), str(created_at.date()))['to']['GHS'][0]['mid']
-        print currency_rate
+        print currency_rate,status_map[o["status"]]
         SI_dict = {"doctype": "Purchase Order",
                    "title": supplier_company['name'],
                    "supplier": supplier_company['name'],
@@ -204,31 +209,38 @@ def gecko_po():
                    "schedule_date": created_at.date(),  # TODO + 30 days
                    "transaction_date": created_at.date(),
                    "items": SI_items,
-                   "docstatus": 1,
+                   "docstatus": status_map[o["status"]],
                    "name": o["id"],
                    "due_date": due_at.date(),
                    "delivery_date": created_at.date(),
                    "inflow_file":o["order_number"],
                    "currency": currency['iso'],
-                   "conversion_rate":currency_rate
+                   "conversion_rate":currency_rate,
+                   # "workflow_state":status_map[o["status"]]
                    }
         # print "****************** Sales Invoice ******************"
         # print SI_dict
         SI_created = frappe.get_doc(SI_dict).insert()
         rename_doc("Purchase Order", SI_created.name, o['order_number'], force=True)
-        # print procured_items
-        if procured_items:
-            make_delivery(procured_items,o['order_number'],received_at)
-        paid = 0
-        if o['status'] == "received":
-            paid = 1
-            print "paid"
-        else:
-            print "unpaid"
-        print o["order_number"]
-        make_invoice(o["order_number"],created_at,paid)
-        # break
         frappe.db.commit()
+        # print procured_items
+        # frappe.db.sql("""UPDATE `tabPurchase Order` SET workflow_state=%s WHERE name=%s""",(status_map[o["status"]],o['order_number']))
+        # frappe.db.commit()
+        if o['status'] != "draft":
+            if procured_items:
+                make_delivery(procured_items,o['order_number'],received_at)
+            paid = 0
+            if o['status'] == "received":
+                paid = 1
+                print "paid"
+            else:
+                print "unpaid"
+            print o["order_number"]
+
+
+            make_invoice(o["order_number"],created_at,paid)
+        # break
+            frappe.db.commit()
 
 """
 Consumer Key: 6QFRVEGFH8ODSCDVPVSASMJ0JUWYLG
