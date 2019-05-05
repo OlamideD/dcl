@@ -5,6 +5,21 @@ from erpnext.buying.doctype.purchase_order.purchase_order \
     import make_purchase_invoice,make_purchase_receipt as make_delivery_note
 from dcl.inflow_import import make_payment_request
 from erpnext.accounts.doctype.payment_request.payment_request import make_payment_entry
+from datetime import timedelta
+
+
+def test_currency():
+    # from openexchangerates import OpenExchangeRatesClient
+    # client = OpenExchangeRatesClient('f6a4266347d544f59348bdf1f1a04a05')
+    # print client.historical(frappe.utils.get_datetime().date(),'GHS')
+    # import PyCurrency_Converter
+    # PyCurrency_Converter.convert(1,'USD', 'GHS')
+    # from fixerio import Fixerio
+
+    from dcl.tradegecko.fixerio import Fixerio
+    fxrio = Fixerio(access_key='88581fe5b1c9f21dbb6f90ba6722d11c', base='GHS')
+    currency_rate = fxrio.historical_rates(frappe.utils.get_datetime().date())  # ['rates'][currency['iso']]
+    print currency_rate
 
 def make_delivery(fulfilled_items,current_order,datepaid):
     #against_sales_order
@@ -78,8 +93,8 @@ def gecko_po():
     # tg = TradeGeckoRestClient(access_token, refresh_token)
     tg = TradeGeckoRestClient(access_token)
     # print tg.company.all()['companies'][0]
-    orders = tg.purchase_order.all()['purchase_orders']
-    # orders = tg.purchase_order.filter(order_number="PO0443")['purchase_orders']
+    # orders = tg.purchase_order.all()['purchase_orders']
+    orders = tg.purchase_order.filter(order_number="PO0440")['purchase_orders']
 
     # print orders
     income_accounts = "5111 - Cost of Goods Sold - DCL"
@@ -197,11 +212,24 @@ def gecko_po():
         # # currency_rate = c.get_rate(currency['iso'], 'GHC')
         # currency_rate = PyCurrency_Converter.convert(1, currency['iso'], 'GHC')
 
-        from xecd_rates_client import XecdClient
-        xecd = XecdClient('dcllaboratoryproductsltd694148295', '606sp0hi0kespeghmd41b3vus9')
-        currency_rate = xecd.historic_rate_period(1, currency['iso'],
-                                                  "GHS", str(created_at.date()), str(created_at.date()))['to']['GHS'][0]['mid']
-        print currency_rate,status_map[o["status"]]
+        # from xecd_rates_client import XecdClient
+        # xecd = XecdClient('dcllaboratoryproductsltd694148295', '606sp0hi0kespeghmd41b3vus9')
+        # currency_rate = xecd.historic_rate(str(created_at.date()), str(created_at.time()),currency['iso'], "GHS",1)
+        # print currency_rate,str(created_at.date()),status_map[o["status"]]
+        # try:
+        # currency_rate = currency_rate['to']['GHS'][0]['mid']
+        # except:
+        #     print str((created_at-timedelta(days=1)).date())
+        #     currency_rate = xecd.historic_rate(str((created_at-timedelta(days=1)).date()), str(created_at.time()), currency['iso'], "GHS", 1)
+        #     print currency_rate
+        #     currency_rate = currency_rate['to']['GHS'][0]['mid']
+        from dcl.tradegecko.fixerio import Fixerio
+        fxrio = Fixerio(access_key='88581fe5b1c9f21dbb6f90ba6722d11c',base=currency['iso'])
+        currency_rate = fxrio.historical_rates(created_at.date())['rates']
+        # print currency_rate['EUR'],currency['iso']
+        # currency_rate = currency_rate[currency['iso']]
+        currency_rate = currency_rate['GHS']
+
         SI_dict = {"doctype": "Purchase Order",
                    "title": supplier_company['name'],
                    "supplier": supplier_company['name'],
