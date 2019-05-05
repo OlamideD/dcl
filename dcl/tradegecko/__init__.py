@@ -63,6 +63,14 @@ def currencies():
 
 # bench --site dcl2 execute dcl.tradegecko.test_gecko
 def gecko_po():
+
+
+    # import currencylayer
+    # exchange_rate = currencylayer.Client(access_key='dee20c4b0dde59d26379e22a82986cb3')
+    # rates = exchange_rate.live_rates(base_currency="GHS")
+    # print rates
+
+
     access_token = "6daee46c0b4dbca8baac12dbb0e8b68e93934608c510bb41a770bbbd8c8a7ca5"
     refresh_token = "76098f0a7f66233fe97f160980eae15a9a7007a5f5b7b641f211748d58e583ea"
     # tg = TradeGeckoRestClient(access_token, refresh_token)
@@ -177,6 +185,18 @@ def gecko_po():
                             "supplier_group": "All Supplier Groups", "supplier_type": "Company"}).insert()
             frappe.db.commit()
 
+        # from forex_python.converter import CurrencyRates
+        # import PyCurrency_Converter
+        # c = CurrencyRates()
+        # print currency['iso']
+        # # currency_rate = c.get_rate(currency['iso'], 'GHC')
+        # currency_rate = PyCurrency_Converter.convert(1, currency['iso'], 'GHC')
+
+        from xecd_rates_client import XecdClient
+        xecd = XecdClient('dcllaboratoryproductsltd694148295', '606sp0hi0kespeghmd41b3vus9')
+        currency_rate = xecd.historic_rate_period(1, currency['iso'],
+                                                  "GHS", str(created_at.date()), str(created_at.date()))['to']['GHS'][0]['mid']
+        print currency_rate
         SI_dict = {"doctype": "Purchase Order",
                    "title": supplier_company['name'],
                    "supplier": supplier_company['name'],
@@ -189,8 +209,8 @@ def gecko_po():
                    "due_date": due_at.date(),
                    "delivery_date": created_at.date(),
                    "inflow_file":o["order_number"],
-                   "currency": currency['iso']
-                   # "conversion_rate":currency['rate']
+                   "currency": currency['iso'],
+                   "conversion_rate":currency_rate
                    }
         # print "****************** Sales Invoice ******************"
         # print SI_dict
