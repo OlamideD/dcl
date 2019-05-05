@@ -153,15 +153,25 @@ def gecko_po():
                 item_code = variant["sku"] or variant["product_name"]
                 item_name = variant["product_name"]
                 item_description = variant["description"]
-                create_item = frappe.get_doc({"doctype": "Item",
-                                              "item_code": variant["sku"] or variant["product_name"],
-                                              "item_name": variant["product_name"],
-                                              "description": variant["description"] or variant["product_name"],
-                                              "item_group": "All Item Groups",
-                                              "variant_id":line_item['variant_id']
-                                              })
-                create_item.insert(ignore_permissions=True)
-                frappe.db.commit()
+
+                find_item = frappe.db.sql("""SELECT Count(*),item_code,item_name,description FROM `tabItem`
+                                       WHERE item_code=%s""",
+                                           (variant["sku"] or variant["product_name"]))
+                if find_item[0][0] == 0:
+                    create_item = frappe.get_doc({"doctype": "Item",
+                                                  "item_code": variant["sku"] or variant["product_name"],
+                                                  "item_name": variant["product_name"],
+                                                  "description": variant["description"] or variant["product_name"],
+                                                  "item_group": "All Item Groups",
+                                                  "variant_id":line_item['variant_id']
+                                                  })
+                    create_item.insert(ignore_permissions=True)
+                    frappe.db.commit()
+                else:
+                    item_code = find_item[0][1]
+                    item_name = find_item[0][2]
+                    item_description = find_item[0][3]
+
             else:
                 item_code = exists_cat[0][1]
                 item_name = exists_cat[0][2]
