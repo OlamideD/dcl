@@ -163,8 +163,10 @@ def gecko_po(page=1):
             if exists_cat[0][0] == 0:
                 variant = tg.variant.get(line_item['variant_id'])["variant"]
                 # print variant
-                item_code = variant["sku"] or variant["product_name"]
-                item_name = variant["product_name"]
+                import re
+                clean_name = re.sub(r"[^a-zA-Z0-9]+", ' ', variant["product_name"])
+                item_code = variant["sku"] or clean_name
+                item_name = clean_name
                 if "X960 Pipettor tip Thermo Scientific Finntip Flex  Filter sterile, free from DNA, " \
                    "DNase and RNasein vacuum sealed sterilized tip racks polypropylene tip," in item_code:
                     item_code = "X960 Pipettor tip Thermo Scientific Finntip Flex Filter"
