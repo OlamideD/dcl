@@ -172,9 +172,9 @@ def gecko_po(page=1):
                    "DNase and RNasein vacuum sealed sterilized tip racks polypropylene tip," in item_name:
                     item_name = "X960 Pipettor tip Thermo Scientific Finntip Flex Filter"
 
-                if "Stericup-GV, 0.22 µm, PVDF, 500 mL, 0.22micrometer, radio-sterilized" in item_code:
+                if "Stericup-GV, 0.22 " in item_code:
                     item_code = "Stericup-GV"
-                if "Stericup-GV, 0.22 µm, PVDF, 500 mL, 0.22micrometer, radio-sterilized" in item_name:
+                if "Stericup-GV, 0.22 " in item_name:
                     item_name = "Stericup-GV"
 
                 item_description = variant["description"]
