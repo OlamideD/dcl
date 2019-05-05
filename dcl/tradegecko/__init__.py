@@ -113,7 +113,7 @@ def gecko_po():
             # line_item = tg.purchase_order_line_item.get(i)['purchase_order_line_item']
             # print line_item
 
-            exists_cat = frappe.db.sql("""SELECT Count(*),item_code,item_name,item_description FROM `tabItem`
+            exists_cat = frappe.db.sql("""SELECT Count(*),item_code,item_name,description FROM `tabItem`
                         WHERE variant_id=%s""",
                                        (line_item['variant_id']))
             item_code = ""
