@@ -106,6 +106,13 @@ def gecko_po():
         # if o["status"] == "draft" or o["status"] == "received": #draft,received
         # if o["status"] == "draft" or o["status"] == "active": #draft,received, active
         #     continue
+
+
+        exists_po = frappe.db.sql("""SELECT Count(*) FROM `tabPurchase Order` WHERE name=%s""",(o['order_number']))
+
+        if exists_po[0][0] > 0:
+            continue
+
         print o
 
         remove_imported_data(o["order_number"])
