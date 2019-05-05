@@ -96,8 +96,8 @@ def gecko_po(page=1):
     # tg = TradeGeckoRestClient(access_token, refresh_token)
     tg = TradeGeckoRestClient(access_token)
     # print tg.company.all()['companies'][0]
-    orders = tg.purchase_order.all(page=page,limit=250)['purchase_orders']
-    # orders = tg.purchase_order.filter(order_number="PO0346")['purchase_orders']
+    # orders = tg.purchase_order.all(page=page,limit=250)['purchase_orders']
+    orders = tg.purchase_order.filter(order_number="PO0209")['purchase_orders']
 
     # print orders
     income_accounts = "5111 - Cost of Goods Sold - DCL"
@@ -165,7 +165,7 @@ def gecko_po(page=1):
                 # print variant
                 import re
                 clean_name = re.sub(r"[^a-zA-Z0-9]+", ' ', variant["product_name"])
-                item_code = variant["sku"] or clean_name
+                item_code = re.sub(r"[^a-zA-Z0-9]+", ' ', variant["sku"]) or clean_name
                 item_name = clean_name
                 if "X960 Pipettor tip Thermo Scientific Finntip Flex  Filter sterile, free from DNA, " \
                    "DNase and RNasein vacuum sealed sterilized tip racks polypropylene tip," in item_code:
@@ -185,13 +185,15 @@ def gecko_po(page=1):
                                        WHERE item_code=%s""",
                                            (item_code))
                 if find_item[0][0] == 0:
-                    create_item = frappe.get_doc({"doctype": "Item",
+                    item_dict = {"doctype": "Item",
                                                   "item_code": item_code,
                                                   "item_name": item_name,
                                                   "description": variant["description"] or variant["product_name"],
                                                   "item_group": "All Item Groups",
                                                   "variant_id":line_item['variant_id']
-                                                  })
+                                                  }
+                    print item_dict
+                    create_item = frappe.get_doc(item_dict)
                     create_item.insert(ignore_permissions=True)
                     frappe.db.commit()
                 else:
