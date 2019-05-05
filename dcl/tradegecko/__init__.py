@@ -50,7 +50,7 @@ def make_delivery(fulfilled_items,current_order,datepaid):
     dn.save()
     dn.submit()
 
-# bench --site dcl2 execute dcl.tradegecko.test_gecko
+# bench --site dcl2 execute dcl.tradegecko.currencies
 def currencies():
     access_token = "6daee46c0b4dbca8baac12dbb0e8b68e93934608c510bb41a770bbbd8c8a7ca5"
     refresh_token = "76098f0a7f66233fe97f160980eae15a9a7007a5f5b7b641f211748d58e583ea"
@@ -68,8 +68,9 @@ def gecko_po():
     # tg = TradeGeckoRestClient(access_token, refresh_token)
     tg = TradeGeckoRestClient(access_token)
     # print tg.company.all()['companies'][0]
-    orders = tg.purchase_order.all()['purchase_orders']
-    # orders = tg.purchase_order.filter(order_number="PO0445")['purchase_orders']
+    # orders = tg.purchase_order.all()['purchase_orders']
+    orders = tg.purchase_order.filter(order_number="PO0445")['purchase_orders']
+
     # print orders
     income_accounts = "5111 - Cost of Goods Sold - DCL"
     # income_accounts = "Sales - J"
@@ -87,7 +88,7 @@ def gecko_po():
         SI_items = []
         to_warehouse = tg.location.get(o['stock_location_id'])['location']
         currency = tg.currency.get(o['currency_id'])['currency']
-        # print currency
+        print currency
         exists_warehouse = frappe.db.sql("""SELECT Count(*) FROM `tabWarehouse` WHERE warehouse_name=%s""",
                                          (to_warehouse['label']))
         # print exists_cat, row["Location"]
@@ -112,18 +113,22 @@ def gecko_po():
             # line_item = tg.purchase_order_line_item.get(i)['purchase_order_line_item']
             # print line_item
 
-            exists_cat = frappe.db.sql("""SELECT Count(*),item_code FROM `tabItem`
+            exists_cat = frappe.db.sql("""SELECT Count(*),item_code,item_name,item_description FROM `tabItem`
                         WHERE variant_id=%s""",
                                        (line_item['variant_id']))
             item_code = ""
+            item_name = ""
+            item_description = ""
             if exists_cat[0][0] == 0:
                 variant = tg.variant.get(line_item['variant_id'])["variant"]
                 # print variant
                 item_code = variant["sku"] or variant["product_name"]
+                item_name = variant["product_name"]
+                item_description = variant["description"]
                 create_item = frappe.get_doc({"doctype": "Item",
                                               "item_code": variant["sku"] or variant["product_name"],
+                                              "item_name": variant["product_name"],
                                               "description": variant["description"] or variant["product_name"],
-                                              # "item_group": row["Category"].strip() + " Category"
                                               "item_group": "All Item Groups",
                                               "variant_id":line_item['variant_id']
                                               })
@@ -131,6 +136,8 @@ def gecko_po():
                 frappe.db.commit()
             else:
                 item_code = exists_cat[0][1]
+                item_name = exists_cat[0][2]
+                item_description = exists_cat[0][3]
 
             if line_item['procurement_id']:
                 line_item.update({"item_code":item_code})
@@ -144,8 +151,8 @@ def gecko_po():
 
             if not found_line:
                 SI_item = {
-                    "description": item_code,
-                    "item_name": item_code,
+                    "description": item_description,
+                    "item_name": item_name,
                     "item_code": item_code,
                     "rate": line_item["price"],
                     "conversion_factor": 1,
@@ -182,8 +189,8 @@ def gecko_po():
                    "due_date": due_at.date(),
                    "delivery_date": created_at.date(),
                    "inflow_file":o["order_number"],
-                   "currency": currency['iso'],
-                   "conversion_rate":currency['rate']
+                   "currency": currency['iso']
+                   # "conversion_rate":currency['rate']
                    }
         # print "****************** Sales Invoice ******************"
         # print SI_dict
