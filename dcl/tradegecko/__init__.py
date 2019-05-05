@@ -196,8 +196,8 @@ def gecko_po():
 
             found_line = 0
             for exist_line_item in SI_items:
-                if exist_line_item['item_code'] == variant["product_name"] or \
-                                exist_line_item['item_code'] == variant["sku"]:
+                if exist_line_item['item_code'] == item_code or \
+                                exist_line_item['item_code'] == item_name:
                     found_line = 1
                     exist_line_item.update({"qty":round(float(exist_line_item["qty"])+float(line_item["quantity"]))})
 
