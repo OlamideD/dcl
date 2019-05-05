@@ -96,8 +96,8 @@ def gecko_po(page=1):
     # tg = TradeGeckoRestClient(access_token, refresh_token)
     tg = TradeGeckoRestClient(access_token)
     # print tg.company.all()['companies'][0]
-    orders = tg.purchase_order.all(page=page,limit=250)['purchase_orders']
-    # orders = tg.purchase_order.filter(order_number="PO0209")['purchase_orders']
+    # orders = tg.purchase_order.all(page=page,limit=250)['purchase_orders']
+    orders = tg.purchase_order.filter(order_number="PO0002")['purchase_orders']
 
     # print orders
     income_accounts = "5111 - Cost of Goods Sold - DCL"
@@ -112,8 +112,8 @@ def gecko_po(page=1):
 
 
         exists_po = frappe.db.sql("""SELECT Count(*) FROM `tabPurchase Order` WHERE name=%s""",(o['order_number']))
-        if exists_po[0][0] > 0:
-            continue
+        # if exists_po[0][0] > 0:
+        #     continue
 
         print o
 
@@ -161,7 +161,13 @@ def gecko_po(page=1):
             item_name = ""
             item_description = ""
             if exists_cat[0][0] == 0:
-                variant = tg.variant.get(line_item['variant_id'])["variant"]
+                variant = tg.variant.get(line_item['variant_id'])
+                print variant,line_item['variant_id']
+                print line_item
+                if not variant:
+                    variant = {'product_name':line_item['label'],'sku':line_item['label'],'description':line_item['label']}
+                else:
+                    variant = variant["variant"]
                 # print variant
                 import re
                 clean_name = re.sub(r"[^a-zA-Z0-9]+", ' ', variant["product_name"])
@@ -192,7 +198,7 @@ def gecko_po(page=1):
                                                   "item_group": "All Item Groups",
                                                   "variant_id":line_item['variant_id']
                                                   }
-                    print item_dict
+                    # print item_dict
                     create_item = frappe.get_doc(item_dict)
                     create_item.insert(ignore_permissions=True)
                     frappe.db.commit()
