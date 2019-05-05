@@ -94,7 +94,7 @@ def gecko_po():
     tg = TradeGeckoRestClient(access_token)
     # print tg.company.all()['companies'][0]
     orders = tg.purchase_order.all()['purchase_orders']
-    # orders = tg.purchase_order.filter(order_number="PO0440")['purchase_orders']
+    # orders = tg.purchase_order.filter(order_number="PO0348")['purchase_orders']
 
     # print orders
     income_accounts = "5111 - Cost of Goods Sold - DCL"
@@ -204,7 +204,7 @@ def gecko_po():
                     "uom": "Nos",
                     "expense_account": income_accounts,
                     "cost_center": cost_centers,
-                    "qty": float(line_item["quantity"]),
+                    "qty": round(float(line_item["quantity"])),
                     "warehouse": to_warehouse['label'] + " - DCL",  # Location
                     "OrderDate": o["created_at"]
                 }
