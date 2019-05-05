@@ -165,15 +165,21 @@ def gecko_po():
                 # print variant
                 item_code = variant["sku"] or variant["product_name"]
                 item_name = variant["product_name"]
+                if "X960 Pipettor tip Thermo Scientific Finntip Flex  Filter sterile, free from DNA, " \
+                   "DNase and RNasein vacuum sealed sterilized tip racks polypropylene tip," in item_code:
+                    item_code = "X960 Pipettor tip Thermo Scientific Finntip Flex Filter"
+                if "X960 Pipettor tip Thermo Scientific Finntip Flex  Filter sterile, free from DNA, " \
+                   "DNase and RNasein vacuum sealed sterilized tip racks polypropylene tip," in item_name:
+                    item_name = "X960 Pipettor tip Thermo Scientific Finntip Flex Filter"
                 item_description = variant["description"]
 
                 find_item = frappe.db.sql("""SELECT Count(*),item_code,item_name,description FROM `tabItem`
                                        WHERE item_code=%s""",
-                                           (variant["sku"] or variant["product_name"]))
+                                           (item_code))
                 if find_item[0][0] == 0:
                     create_item = frappe.get_doc({"doctype": "Item",
-                                                  "item_code": variant["sku"] or variant["product_name"],
-                                                  "item_name": variant["product_name"],
+                                                  "item_code": item_code,
+                                                  "item_name": item_name,
                                                   "description": variant["description"] or variant["product_name"],
                                                   "item_group": "All Item Groups",
                                                   "variant_id":line_item['variant_id']
