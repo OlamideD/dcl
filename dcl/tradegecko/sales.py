@@ -341,7 +341,7 @@ def gecko_orders(page=1):
                 make_delivery(fill_items,current_order,created_at)
 
 
-        break
+        # break
 
 """
 Consumer Key: 6QFRVEGFH8ODSCDVPVSASMJ0JUWYLG
