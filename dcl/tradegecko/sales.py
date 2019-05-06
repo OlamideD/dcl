@@ -77,6 +77,10 @@ def gecko_orders(page=1):
         #     continue
         # if o['payment_status'] == 'unpaid':
         #     continue
+        exists_po = frappe.db.sql("""SELECT Count(*) FROM `tabSales Order` WHERE name=%s""", (o['order_number']))
+        if exists_po[0][0] > 0:
+            continue
+
         print o
         if o['assignee_id']:
             user = tg.user.get(o['assignee_id'])['user']
