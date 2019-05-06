@@ -177,7 +177,10 @@ def gecko_orders(page=1):
                 # print variant
                 import re
                 clean_name = re.sub(r"[^a-zA-Z0-9]+", ' ', variant["product_name"])
-                item_code = re.sub(r"[^a-zA-Z0-9]+", ' ', variant["sku"]) or clean_name
+                if variant["sku"]:
+                    item_code = re.sub(r"[^a-zA-Z0-9]+", ' ', variant["sku"]) or clean_name
+                else:
+                    item_code = clean_name
                 item_name = clean_name
                 if "X960 Pipettor tip Thermo Scientific Finntip Flex  Filter sterile, free from DNA, " \
                    "DNase and RNasein vacuum sealed sterilized tip racks polypropylene tip," in item_code:
