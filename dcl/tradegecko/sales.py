@@ -55,6 +55,8 @@ def make_delivery(fulfilled_items,current_order,datepaid):
     dn.save()
     dn.submit()
 
+
+status_map = {"draft":0,"received":1,"finalized":1,"fulfilled":1}
 # bench --site dcl2 execute dcl.tradegecko.sales.test_gecko
 def gecko_orders(page=1):
     access_token = "6daee46c0b4dbca8baac12dbb0e8b68e93934608c510bb41a770bbbd8c8a7ca5"
@@ -71,7 +73,7 @@ def gecko_orders(page=1):
     # cost_centers = "Main - J"
 
     for o in orders:
-        # if o["status"] == "draft" or o['status'] == 'fulfilled': #draft,received,finalized
+        # if o["status"] == "draft" or o['status'] == 'fulfilled': #draft,received,finalized,fulfilled
         #     continue
         # if o['payment_status'] == 'unpaid':
         #     continue
@@ -261,7 +263,7 @@ def gecko_orders(page=1):
                    "due_date": created_at.date(),
                    "delivery_date": created_at.date(),
                    "items": SI_items,
-                   "docstatus": 1,
+                   "docstatus": status_map[o["status"]],
                    "inflow_file": current_order,
                    "currency": currency['iso'],
                    "conversion_rate": currency_rate,
@@ -271,75 +273,76 @@ def gecko_orders(page=1):
         SI = frappe.get_doc(SI_dict)
         SI_created = SI.insert(ignore_permissions=True)
         rename_doc("Sales Order", SI_created.name, o['order_number'], force=True)
-        if o['invoices']:
-            for item in SI_items:
-                make_stock_entry(item_code=item["item_code"], qty=item['qty'],
-                                 to_warehouse=item["warehouse"],
-                                 valuation_rate=1, remarks="This is affected by data import. ",
-                                 posting_date=created_at.date(),
-                                 posting_time=str(created_at.time()),
-                                 set_posting_time=1,inflow_file=current_order)
-                frappe.db.commit()
+        if o['status'] != "draft":
+            if o['invoices']:
+                for item in SI_items:
+                    make_stock_entry(item_code=item["item_code"], qty=item['qty'],
+                                     to_warehouse=item["warehouse"],
+                                     valuation_rate=1, remarks="This is affected by data import. ",
+                                     posting_date=created_at.date(),
+                                     posting_time=str(created_at.time()),
+                                     set_posting_time=1,inflow_file=current_order)
+                    frappe.db.commit()
 
-        for i in o['invoices']:
-            inv = test_xero(i['invoice_number'])
-            pi = make_invoice(o["order_number"],SI_dict,created_at)
-            # print inv
-            if inv[0]['AmountPaid']:
-                print "paid"
-                payment_request = make_payment_request(dt="Sales Invoice", dn=pi.name, recipient_id="",
-                                                       submit_doc=True, mute_email=True, use_dummy_message=True,
-                                                       grand_total=float(o["total"]),
-                                                       posting_date=created_at.date(), posting_time=str(created_at.time()),
-                                                       inflow_file=current_order)
+            for i in o['invoices']:
+                inv = test_xero(i['invoice_number'])
+                pi = make_invoice(o["order_number"],SI_dict,created_at)
+                # print inv
+                if inv[0]['AmountPaid']:
+                    print "paid"
+                    payment_request = make_payment_request(dt="Sales Invoice", dn=pi.name, recipient_id="",
+                                                           submit_doc=True, mute_email=True, use_dummy_message=True,
+                                                           grand_total=float(o["total"]),
+                                                           posting_date=created_at.date(), posting_time=str(created_at.time()),
+                                                           inflow_file=current_order)
 
-                # if SI_dict["PaymentStatus"] != "Invoiced":
-                payment_entry = frappe.get_doc(make_payment_entry(payment_request.name))
-                payment_entry.posting_date = created_at.date()
-                payment_entry.posting_time = str(created_at.time())
-                payment_entry.set_posting_time = 1
-                # print "             ",pi.rounded_total,payment_entry.paid_amount
-                # if SI_dict["PaymentStatus"] == "Paid":
-                payment_entry.paid_amount = pi.rounded_total
+                    # if SI_dict["PaymentStatus"] != "Invoiced":
+                    payment_entry = frappe.get_doc(make_payment_entry(payment_request.name))
+                    payment_entry.posting_date = created_at.date()
+                    payment_entry.posting_time = str(created_at.time())
+                    payment_entry.set_posting_time = 1
+                    # print "             ",pi.rounded_total,payment_entry.paid_amount
+                    # if SI_dict["PaymentStatus"] == "Paid":
+                    payment_entry.paid_amount = pi.rounded_total
 
-                # else:
-                #     payment_entry.paid_amount = float(SI_dict["AmountPaid"])
-                payment_entry.inflow_file = current_order
-                payment_entry.submit()
-                frappe.db.commit()
-            else:
-                print "unpaid"
+                    # else:
+                    #     payment_entry.paid_amount = float(SI_dict["AmountPaid"])
+                    payment_entry.inflow_file = current_order
+                    payment_entry.submit()
+                    frappe.db.commit()
+                else:
+                    print "unpaid"
 
 
-            # print "=================== FULFILLMENT ====================="
-            # print "=================== FULFILLMENT ====================="
-            # print "=================== FULFILLMENT ====================="
-            # print "=================== FULFILLMENT ====================="
-            # print "=================== FULFILLMENT ====================="
-            # print "=================== FULFILLMENT ====================="
-            # print "=================== FULFILLMENT ====================="
-            # print "=================== FULFILLMENT ====================="
-            # print "=================== FULFILLMENT ====================="
-            # print "=================== FULFILLMENT ====================="
-            for i in o['fulfillment_ids']:
-            #     fill = tg.fulfillment.get(i)
-            #     print fill
-                fills = tg.fulfillment_line_item.filter(fulfillment_id = i)
-                # print fills
-                # print SI_items
-                fill_items = fills['fulfillment_line_items']
-                for j in fill_items:
-                    # print j
-                    for item in SI_items:
-                        if j['variant_id'] == item['variant_id']:
-                            j.update(item)
-                # print fill_items
-                # print " making delivery. "
-                # print " making delivery. "
-                # print " making delivery. "
-                # print " making delivery. "
-                # print " making delivery. "
-                make_delivery(fill_items,current_order,created_at)
+                # print "=================== FULFILLMENT ====================="
+                # print "=================== FULFILLMENT ====================="
+                # print "=================== FULFILLMENT ====================="
+                # print "=================== FULFILLMENT ====================="
+                # print "=================== FULFILLMENT ====================="
+                # print "=================== FULFILLMENT ====================="
+                # print "=================== FULFILLMENT ====================="
+                # print "=================== FULFILLMENT ====================="
+                # print "=================== FULFILLMENT ====================="
+                # print "=================== FULFILLMENT ====================="
+                for i in o['fulfillment_ids']:
+                #     fill = tg.fulfillment.get(i)
+                #     print fill
+                    fills = tg.fulfillment_line_item.filter(fulfillment_id = i)
+                    # print fills
+                    # print SI_items
+                    fill_items = fills['fulfillment_line_items']
+                    for j in fill_items:
+                        # print j
+                        for item in SI_items:
+                            if j['variant_id'] == item['variant_id']:
+                                j.update(item)
+                    # print fill_items
+                    # print " making delivery. "
+                    # print " making delivery. "
+                    # print " making delivery. "
+                    # print " making delivery. "
+                    # print " making delivery. "
+                    make_delivery(fill_items,current_order,created_at)
 
 
         # break
