@@ -111,17 +111,28 @@ def gecko_orders():
 
 
         currency = tg.currency.get(o['currency_id'])['currency']
-        if o['invoices']:
-            inv = test_xero(o['invoices'][0]['invoice_number'])
-            # make_invoice(o["order_number"],SI_dict,created_at)
-            # print inv[0]
-            if inv[0]['AmountPaid']:
-                print "paid"
-                currency = {'iso':inv[0]['CurrencyCode'],'rate':inv[0]['CurrencyRate']}
-            else:
-                continue
-        else:
-            continue
+        # if o['invoices']:
+        #     inv = test_xero(o['invoices'][0]['invoice_number'])
+        #     # make_invoice(o["order_number"],SI_dict,created_at)
+        #     # print inv[0]
+        #     if inv[0]['AmountPaid']:
+        #         print "paid"
+        #         currency = {'iso':inv[0]['CurrencyCode'],'rate':inv[0]['CurrencyRate']}
+        #     else:
+        #         continue
+        # else:
+        #     continue
+        created_at = parser.parse(o["created_at"])
+        # received_at = parser.parse(o["received_at"])
+        # due_at = parser.parse(o["due_at"])
+
+        from dcl.tradegecko.fixerio import Fixerio
+        fxrio = Fixerio(access_key='88581fe5b1c9f21dbb6f90ba6722d11c', base=currency['iso'])
+        currency_rate = fxrio.historical_rates(created_at.date())['rates']
+        # print currency_rate['EUR'],currency['iso']
+        # currency_rate = currency_rate[currency['iso']]
+        currency_rate = currency_rate['GHS']
+
         # print o["order_number"]
         remove_imported_data(o["order_number"])
         #
@@ -138,9 +149,6 @@ def gecko_orders():
             frappe.db.commit()
 
 
-        created_at = parser.parse(o["created_at"])
-        # received_at = parser.parse(o["received_at"])
-        # due_at = parser.parse(o["due_at"])
         current_order = o["order_number"]
         for i in o['order_line_item_ids']:
             line_item = tg.order_line_item.get(i)['order_line_item']
@@ -148,27 +156,69 @@ def gecko_orders():
             exists_cat = frappe.db.sql("""SELECT Count(*),item_code FROM `tabItem`
                                     WHERE variant_id=%s""",
                                        (line_item['variant_id']))
+            exists_cat = frappe.db.sql("""SELECT Count(*),item_code,item_name,description FROM `tabItem`
+                                    WHERE variant_id=%s""",
+                                       (line_item['variant_id']))
             item_code = ""
+            item_name = ""
+            item_description = ""
             if exists_cat[0][0] == 0:
-                variant = tg.variant.get(line_item['variant_id'])["variant"]
+                variant = tg.variant.get(line_item['variant_id'])
+                # print variant,line_item['variant_id']
+                # print line_item
+                if not variant:
+                    variant = {'product_name': line_item['label'], 'sku': line_item['label'],
+                               'description': line_item['label']}
+                else:
+                    variant = variant["variant"]
                 # print variant
-                item_code = variant["sku"] or variant["product_name"]
-                create_item = frappe.get_doc({"doctype": "Item",
-                                              "item_code": variant["sku"] or variant["product_name"],
-                                              "description": variant["description"] or variant["product_name"],
-                                              # "item_group": row["Category"].strip() + " Category"
-                                              "item_group": "All Item Groups",
-                                              "variant_id": line_item['variant_id']
-                                              })
-                create_item.insert(ignore_permissions=True)
-                frappe.db.commit()
+                import re
+                clean_name = re.sub(r"[^a-zA-Z0-9]+", ' ', variant["product_name"])
+                item_code = re.sub(r"[^a-zA-Z0-9]+", ' ', variant["sku"]) or clean_name
+                item_name = clean_name
+                if "X960 Pipettor tip Thermo Scientific Finntip Flex  Filter sterile, free from DNA, " \
+                   "DNase and RNasein vacuum sealed sterilized tip racks polypropylene tip," in item_code:
+                    item_code = "X960 Pipettor tip Thermo Scientific Finntip Flex Filter"
+                if "X960 Pipettor tip Thermo Scientific Finntip Flex  Filter sterile, free from DNA, " \
+                   "DNase and RNasein vacuum sealed sterilized tip racks polypropylene tip," in item_name:
+                    item_name = "X960 Pipettor tip Thermo Scientific Finntip Flex Filter"
+
+                if "Stericup-GV, 0.22 " in item_code:
+                    item_code = "Stericup-GV"
+                if "Stericup-GV, 0.22 " in item_name:
+                    item_name = "Stericup-GV"
+
+                item_description = variant["description"]
+
+                find_item = frappe.db.sql("""SELECT Count(*),item_code,item_name,description FROM `tabItem`
+                                                   WHERE item_code=%s""",
+                                          (item_code))
+                if find_item[0][0] == 0:
+                    item_dict = {"doctype": "Item",
+                                 "item_code": item_code,
+                                 "item_name": item_name,
+                                 "description": variant["description"] or variant["product_name"],
+                                 "item_group": "All Item Groups",
+                                 "variant_id": line_item['variant_id']
+                                 }
+                    # print item_dict
+                    create_item = frappe.get_doc(item_dict)
+                    create_item.insert(ignore_permissions=True)
+                    frappe.db.commit()
+                else:
+                    item_code = find_item[0][1]
+                    item_name = find_item[0][2]
+                    item_description = find_item[0][3]
+
             else:
                 item_code = exists_cat[0][1]
+                item_name = exists_cat[0][2]
+                item_description = exists_cat[0][3]
 
             # print variant
             SI_item = {
-                "description": item_code,
-                "item_name": item_code,
+                "description": item_description,
+                "item_name": item_name,
                 "item_code": item_code,
                 "rate": line_item["price"],
                 "price_list_rate": line_item["price"],
@@ -213,7 +263,7 @@ def gecko_orders():
                    "docstatus": 1,
                    "inflow_file": current_order,
                    "currency": currency['iso'],
-                   "conversion_rate": currency['rate'],
+                   "conversion_rate": currency_rate,
                    "sales_team":sales_team
                    }
 
