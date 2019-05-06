@@ -56,7 +56,7 @@ def make_delivery(fulfilled_items,current_order,datepaid):
     dn.submit()
 
 # bench --site dcl2 execute dcl.tradegecko.sales.test_gecko
-def gecko_orders():
+def gecko_orders(page=1):
     access_token = "6daee46c0b4dbca8baac12dbb0e8b68e93934608c510bb41a770bbbd8c8a7ca5"
     refresh_token = "76098f0a7f66233fe97f160980eae15a9a7007a5f5b7b641f211748d58e583ea"
     # tg = TradeGeckoRestClient(access_token, refresh_token)
@@ -73,12 +73,12 @@ def gecko_orders():
     for o in orders:
         # if o["status"] == "draft" or o['status'] == 'fulfilled': #draft,received,finalized
         #     continue
-        if o['payment_status'] == 'unpaid':
-            continue
+        # if o['payment_status'] == 'unpaid':
+        #     continue
         print o
         if o['assignee_id']:
             user = tg.user.get(o['assignee_id'])['user']
-            print user
+            # print user
 
             emp = frappe.db.sql("""SELECT name FROM `tabEmployee`
                     WHERE first_name=%s and last_name=%s""",(user['first_name'],user['last_name']))
@@ -283,7 +283,7 @@ def gecko_orders():
         for i in o['invoices']:
             inv = test_xero(i['invoice_number'])
             pi = make_invoice(o["order_number"],SI_dict,created_at)
-            print inv
+            # print inv
             if inv[0]['AmountPaid']:
                 print "paid"
                 payment_request = make_payment_request(dt="Sales Invoice", dn=pi.name, recipient_id="",
