@@ -100,7 +100,7 @@ def gecko_orders(page=1):
                 emp_name = emp_doc.name
 
             sales_person = frappe.db.sql("""SELECT name FROM `tabSales Person`
-                                WHERE employee=%s""", (emp_name))
+                                WHERE name=%s""", (user['first_name'] +' '+user['last_name']))
             sales_person_name = ""
             if sales_person != ():
                 sales_person_name = sales_person[0][0]
