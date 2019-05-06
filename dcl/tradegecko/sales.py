@@ -91,6 +91,7 @@ def gecko_orders(page=1):
                                           "first_name":user['first_name'],
                                           "last_name":user['last_name'],
                                           "gender":"Other",
+                                          "employee_number":user['first_name']+user['last_name'],
                                           "date_of_birth":frappe.utils.get_datetime().date(),
                                           "date_of_joining":(frappe.utils.get_datetime() + timedelta(days=1)).date()})
                 emp_doc.insert(ignore_permissions=True)
