@@ -62,7 +62,7 @@ def gecko_orders():
     # tg = TradeGeckoRestClient(access_token, refresh_token)
     tg = TradeGeckoRestClient(access_token)
     # print tg.company.all()['companies'][0]
-    orders = tg.order.all()['orders']
+    orders = tg.order.all(page=page,limit=250)['orders']
     # orders = tg.purchase_order.filter(order_number="PO0445")['purchase_orders']
     # print orders
     income_accounts = "5111 - Cost of Goods Sold - DCL"
