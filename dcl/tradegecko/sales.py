@@ -284,13 +284,19 @@ def gecko_orders(page=1,replace=0):
         if o['status'] != "draft" and o['status'] != "active":
             if o['invoices']:
                 for item in SI_items:
-                    make_stock_entry(item_code=item["item_code"], qty=item['qty'],
-                                     to_warehouse=item["warehouse"],
-                                     valuation_rate=1, remarks="This is affected by data import. ",
-                                     posting_date=created_at.date(),
-                                     posting_time=str(created_at.time()),
-                                     set_posting_time=1,inflow_file=current_order)
-                    frappe.db.commit()
+                    #check stocks first
+                    #get_balance_qty_from_sle
+                    #/home/jvfiel/frappe-v11/apps/erpnext/erpnext/stock/stock_balance.py
+                    from erpnext.stock.stock_balance import get_balance_qty_from_sle
+                    if get_balance_qty_from_sle(item["item_code"],to_warehouse) < item['qty']:
+                        reqd_qty = item['qty'] - get_balance_qty_from_sle(item["item_code"],to_warehouse)
+                        make_stock_entry(item_code=item["item_code"], qty=reqd_qty,
+                                         to_warehouse=item["warehouse"],
+                                         valuation_rate=1, remarks="This is affected by data import. ",
+                                         postirng_date=created_at.date(),
+                                         posting_time=str(created_at.time()),
+                                         set_posting_time=1,inflow_file=current_order)
+                        frappe.db.commit()
 
             for i in o['invoices']:
                 inv = test_xero(i['invoice_number'])
@@ -317,21 +323,11 @@ def gecko_orders(page=1,replace=0):
                     #     payment_entry.paid_amount = float(SI_dict["AmountPaid"])
                     payment_entry.inflow_file = current_order
                     payment_entry.submit()
-                    frappe.db.commit()
+                    # frappe.db.commit()
                 else:
                     print "unpaid"
 
 
-                # print "=================== FULFILLMENT ====================="
-                # print "=================== FULFILLMENT ====================="
-                # print "=================== FULFILLMENT ====================="
-                # print "=================== FULFILLMENT ====================="
-                # print "=================== FULFILLMENT ====================="
-                # print "=================== FULFILLMENT ====================="
-                # print "=================== FULFILLMENT ====================="
-                # print "=================== FULFILLMENT ====================="
-                # print "=================== FULFILLMENT ====================="
-                # print "=================== FULFILLMENT ====================="
                 for i in o['fulfillment_ids']:
                 #     fill = tg.fulfillment.get(i)
                 #     print fill
@@ -353,7 +349,7 @@ def gecko_orders(page=1,replace=0):
                     if fill_items:
                         make_delivery(fill_items,current_order,created_at)
 
-
+        frappe.db.commit()
         # break
 
 """
@@ -452,10 +448,12 @@ def remove_imported_data(file,force=0):
         si_doc.delete()
         if counter >= stop:
             print "Commit"
-            frappe.db.commit()
+            # frappe.db.commit()
             counter = 0
         counter += 1
         print counter
+
+    frappe.db.commit()
 
     if force == 1:
         SIs = frappe.db.sql("""SELECT name FROM `tabDelivery Note`""")
@@ -470,10 +468,12 @@ def remove_imported_data(file,force=0):
         si_doc.delete()
         if counter >= stop:
             print "Commit"
-            frappe.db.commit()
+            # frappe.db.commit()
             counter = 0
         counter += 1
         print counter
+
+    frappe.db.commit()
 
     if force == 1:
         SIs = frappe.db.sql("""SELECT name FROM `tabSales Invoice`""")
@@ -489,10 +489,12 @@ def remove_imported_data(file,force=0):
         si_doc.delete()
         if counter >= stop:
             print "Commit"
-            frappe.db.commit()
+            # frappe.db.commit()
             counter = 0
         counter += 1
         print counter
+
+    frappe.db.commit()
 
     if force == 1:
         SIs = frappe.db.sql("""SELECT name FROM `tabSales Order`""")
@@ -506,7 +508,8 @@ def remove_imported_data(file,force=0):
         si_doc.delete()
         if counter >= stop:
             print "Commit"
-            frappe.db.commit()
+            # frappe.db.commit()
             counter = 0
         counter += 1
 
+    frappe.db.commit()
