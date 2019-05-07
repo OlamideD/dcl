@@ -289,9 +289,9 @@ def gecko_orders(page=1,replace=0):
                     #/home/jvfiel/frappe-v11/apps/erpnext/erpnext/stock/stock_balance.py
                     from erpnext.stock.stock_balance import get_balance_qty_from_sle
                     if get_balance_qty_from_sle(item["item_code"],to_warehouse) < item['qty']:
-                        reqd_qty = item['qty'] - get_balance_qty_from_sle(item["item_code"],to_warehouse)
+                        reqd_qty = item['qty'] - get_balance_qty_from_sle(item["item_code"],to_warehouse['label'] + " - DCL")
                         make_stock_entry(item_code=item["item_code"], qty=reqd_qty,
-                                         to_warehouse=item["warehouse"],
+                                         to_warehouse=to_warehouse['label'] + " - DCL",
                                          valuation_rate=1, remarks="This is affected by data import. ",
                                          postirng_date=created_at.date(),
                                          posting_time=str(created_at.time()),
