@@ -392,6 +392,7 @@ def make_invoice(sales_order_name,SI_dict,datepaid):
     pi.inflow_file = sales_order_name
     pi.posting_date = datepaid.date()
     pi.posting_time = str(datepaid.time())
+    pi.set_posting_time = 1
     pi.save()
     pi.submit()
     frappe.db.commit()
