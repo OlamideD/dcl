@@ -56,7 +56,7 @@ def make_delivery(fulfilled_items,current_order,datepaid):
     dn.submit()
 
 
-status_map = {"draft":0,"received":1,"finalized":1,"fulfilled":1}
+status_map = {"draft":0,"received":1,"finalized":1,"fulfilled":1,"active":1}
 # bench --site dcl2 execute dcl.tradegecko.sales.test_gecko
 def gecko_orders(page=1):
     access_token = "6daee46c0b4dbca8baac12dbb0e8b68e93934608c510bb41a770bbbd8c8a7ca5"
