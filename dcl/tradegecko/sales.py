@@ -349,7 +349,8 @@ def gecko_orders(page=1):
                     # print " making delivery. "
                     # print " making delivery. "
                     # print " making delivery. "
-                    make_delivery(fill_items,current_order,created_at)
+                    if fill_items:
+                        make_delivery(fill_items,current_order,created_at)
 
 
         # break
