@@ -393,6 +393,7 @@ def make_invoice(sales_order_name,SI_dict,datepaid):
     pi = make_purchase_invoice(sales_order_name)
     pi.inflow_file = sales_order_name
     pi.posting_date = datepaid.date()
+    pi.due_date = datepaid.date()
     pi.posting_time = str(datepaid.time())
     pi.set_posting_time = 1
     pi.save()
