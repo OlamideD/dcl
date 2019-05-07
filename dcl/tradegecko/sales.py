@@ -56,7 +56,7 @@ def make_delivery(fulfilled_items,current_order,datepaid):
     dn.submit()
 
 
-status_map = {"draft":0,"received":1,"finalized":1,"fulfilled":1,"active":1}
+status_map = {"draft":0,"received":1,"finalized":1,"fulfilled":1,"active":0}
 # bench --site dcl2 execute dcl.tradegecko.sales.test_gecko
 def gecko_orders(page=1):
     access_token = "6daee46c0b4dbca8baac12dbb0e8b68e93934608c510bb41a770bbbd8c8a7ca5"
@@ -280,7 +280,7 @@ def gecko_orders(page=1):
         SI = frappe.get_doc(SI_dict)
         SI_created = SI.insert(ignore_permissions=True)
         rename_doc("Sales Order", SI_created.name, o['order_number'], force=True)
-        if o['status'] != "draft":
+        if o['status'] != "draft" and o['status'] != "active":
             if o['invoices']:
                 for item in SI_items:
                     make_stock_entry(item_code=item["item_code"], qty=item['qty'],
