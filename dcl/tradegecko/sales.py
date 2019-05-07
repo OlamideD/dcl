@@ -58,7 +58,7 @@ def make_delivery(fulfilled_items,current_order,datepaid):
 
 status_map = {"draft":0,"received":1,"finalized":1,"fulfilled":1,"active":0}
 # bench --site dcl2 execute dcl.tradegecko.sales.test_gecko
-def gecko_orders(page=1):
+def gecko_orders(page=1,replace=0):
     access_token = "6daee46c0b4dbca8baac12dbb0e8b68e93934608c510bb41a770bbbd8c8a7ca5"
     refresh_token = "76098f0a7f66233fe97f160980eae15a9a7007a5f5b7b641f211748d58e583ea"
     # tg = TradeGeckoRestClient(access_token, refresh_token)
@@ -77,9 +77,10 @@ def gecko_orders(page=1):
         #     continue
         # if o['payment_status'] == 'unpaid':
         #     continue
-        exists_po = frappe.db.sql("""SELECT Count(*) FROM `tabSales Order` WHERE name=%s""", (o['order_number']))
-        if exists_po[0][0] > 0:
-            continue
+        if replace == 0:
+            exists_po = frappe.db.sql("""SELECT Count(*) FROM `tabSales Order` WHERE name=%s""", (o['order_number']))
+            if exists_po[0][0] > 0:
+                continue
 
         print o
         if o['assignee_id']:
