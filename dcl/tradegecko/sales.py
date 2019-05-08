@@ -296,7 +296,7 @@ def gecko_orders(page=1,replace=0,order_number=""):
                     reserved_qty = get_reserved_qty(item["item_code"],to_warehouse['label'] + " - DCL")
                     print "rsvd qty ", reserved_qty
                     print "bal", (float(get_bal)), item['qty'], item["item_code"], to_warehouse['label'] + " - DCL"
-                    net_bal = (float(get_bal) - float(reserved_qty))
+                    net_bal = (float(get_bal) - float(reserved_qty)-item['qty'])
                     print "net bal", net_bal
 
                     reqd_qty = 0
