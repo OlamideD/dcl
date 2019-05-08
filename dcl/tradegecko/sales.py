@@ -34,22 +34,22 @@ def make_delivery(fulfilled_items,current_order,datepaid):
 
     # print " ========================== SALES RETURN ============================"
     # print fulfilled_items
-    remove_rows = []
-    for dnr_item in dn.items:
-        found = 0
-        for i, item in enumerate(fulfilled_items):
-            # print "                      ", dnr_item.item_code, item['item_code']
-            if dnr_item.item_code == item['item_code']:
-                found = 1
-                del fulfilled_items[i]
-                dnr_item.qty = item['quantity']
-        if found == 0:
-            remove_rows.append(dnr_item)
-
-    # print remove_rows
-    for i, r in enumerate(remove_rows):
-        # print "removing,", r.item_code
-        dn.remove(r)
+    # remove_rows = []
+    # for dnr_item in dn.items:
+    #     found = 0
+    #     for i, item in enumerate(fulfilled_items):
+    #         # print "                      ", dnr_item.item_code, item['item_code']
+    #         if dnr_item.item_code == item['item_code']:
+    #             found = 1
+    #             del fulfilled_items[i]
+    #             dnr_item.qty = item['quantity']
+    #     if found == 0:
+    #         remove_rows.append(dnr_item)
+    #
+    # # print remove_rows
+    # for i, r in enumerate(remove_rows):
+    #     # print "removing,", r.item_code
+    #     dn.remove(r)
     dn.posting_date = datepaid.date()
     dn.posting_time = str(datepaid.time())
     dn.save()
@@ -57,15 +57,17 @@ def make_delivery(fulfilled_items,current_order,datepaid):
 
 
 status_map = {"draft":0,"received":1,"finalized":1,"fulfilled":1,"active":0}
-# bench --site dcl2 execute dcl.tradegecko.sales.test_gecko
-def gecko_orders(page=1,replace=0):
+# bench --site dcl2 execute dcl.tradegecko.sales.gecko_orders --kwargs "{'page':1,'replace':0,'order_number':'SO5271'}"
+def gecko_orders(page=1,replace=0,order_number=""):
     access_token = "6daee46c0b4dbca8baac12dbb0e8b68e93934608c510bb41a770bbbd8c8a7ca5"
     refresh_token = "76098f0a7f66233fe97f160980eae15a9a7007a5f5b7b641f211748d58e583ea"
     # tg = TradeGeckoRestClient(access_token, refresh_token)
     tg = TradeGeckoRestClient(access_token)
     # print tg.company.all()['companies'][0]
-    orders = tg.order.all(page=page,limit=250)['orders']
-    # orders = tg.purchase_order.filter(order_number="PO0445")['purchase_orders']
+    if not order_number:
+        orders = tg.order.all(page=page,limit=250)['orders']
+    else:
+        orders = tg.order.filter(order_number=order_number)['orders']
     # print orders
     income_accounts = "5111 - Cost of Goods Sold - DCL"
     # income_accounts = "Sales - J"
@@ -81,7 +83,7 @@ def gecko_orders(page=1,replace=0):
             exists_po = frappe.db.sql("""SELECT Count(*) FROM `tabSales Order` WHERE name=%s""", (o['order_number']))
             if exists_po[0][0] > 0:
                 continue
-
+        remove_imported_data(o["order_number"])
         print o
         if o['assignee_id']:
             user = tg.user.get(o['assignee_id'])['user']
@@ -142,7 +144,6 @@ def gecko_orders(page=1,replace=0):
         currency_rate = currency_rate['GHS']
 
         # print o["order_number"]
-        remove_imported_data(o["order_number"])
         #
         # break
         SI_items = []
@@ -280,25 +281,44 @@ def gecko_orders(page=1,replace=0):
 
         SI = frappe.get_doc(SI_dict)
         SI_created = SI.insert(ignore_permissions=True)
+        frappe.db.commit()
         rename_doc("Sales Order", SI_created.name, o['order_number'], force=True)
+        frappe.db.commit()
+
         if o['status'] != "draft" and o['status'] != "active":
             if o['invoices']:
                 for item in SI_items:
                     #check stocks first
                     #get_balance_qty_from_sle
                     #/home/jvfiel/frappe-v11/apps/erpnext/erpnext/stock/stock_balance.py
-                    from erpnext.stock.stock_balance import get_balance_qty_from_sle
+                    from erpnext.stock.stock_balance import get_balance_qty_from_sle,get_reserved_qty
                     get_bal = get_balance_qty_from_sle(item["item_code"],to_warehouse['label'] + " - DCL")
-                    if get_bal < item['qty']:
-                        reqd_qty = item['qty'] - get_bal
+                    reserved_qty = get_reserved_qty(item["item_code"],to_warehouse['label'] + " - DCL")
+                    print "rsvd qty ", reserved_qty
+                    print "bal", (float(get_bal)), item['qty'], item["item_code"], to_warehouse['label'] + " - DCL"
+                    net_bal = (float(get_bal) - float(reserved_qty))
+                    print "net bal", net_bal
+
+                    reqd_qty = 0
+                    if net_bal < 0:
+                        # reqd_qty = float(item['qty']) - abs(float(item['qty']))
+                        # print "itm qty", float(item['qty'])
+                        reqd_qty = abs(net_bal)
+                        # reqd_qty = abs(net_bal)+float(item['qty'])
+                        print "req qty", reqd_qty
                         make_stock_entry(item_code=item["item_code"], qty=reqd_qty,
                                          to_warehouse=to_warehouse['label'] + " - DCL",
                                          valuation_rate=1, remarks="This is affected by data import. ",
-                                         postirng_date=created_at.date(),
+                                         posting_date=created_at.date(),
                                          posting_time=str(created_at.time()),
-                                         set_posting_time=1,inflow_file=current_order)
+                                         set_posting_time=1, inflow_file=current_order)
                         frappe.db.commit()
+                        print "qty after stock ent", get_balance_qty_from_sle(item["item_code"],to_warehouse['label'] + " - DCL")
+                    elif net_bal == 0:
+                        reqd_qty = float(item['qty'])
 
+
+                    print "================================="
             for i in o['invoices']:
                 inv = test_xero(i['invoice_number'])
                 pi = make_invoice(o["order_number"],SI_dict,created_at)
@@ -330,8 +350,6 @@ def gecko_orders(page=1,replace=0):
 
 
                 for i in o['fulfillment_ids']:
-                #     fill = tg.fulfillment.get(i)
-                #     print fill
                     fills = tg.fulfillment_line_item.filter(fulfillment_id = i)
                     # print fills
                     # print SI_items
@@ -342,11 +360,12 @@ def gecko_orders(page=1,replace=0):
                             if j['variant_id'] == item['variant_id']:
                                 j.update(item)
                     # print fill_items
-                    # print " making delivery. "
-                    # print " making delivery. "
-                    # print " making delivery. "
-                    # print " making delivery. "
-                    # print " making delivery. "
+                    print " making delivery. "
+                    print " making delivery. "
+                    print " making delivery. "
+                    print " making delivery. "
+                    print " making delivery. "
+                    print fill_items
                     if fill_items:
                         make_delivery(fill_items,current_order,created_at)
 
@@ -514,3 +533,35 @@ def remove_imported_data(file,force=0):
         counter += 1
 
     frappe.db.commit()
+
+
+# def create_dummy():
+#     emp = frappe.db.sql("""SELECT name FROM `tabEmployee`
+#                        WHERE first_name=%s and last_name=%s""", (user['first_name'], user['last_name']))
+#     emp_name = ""
+#     if emp != ():
+#         emp_name = emp[0][0]
+#     else:
+#         # create emp
+#         emp_doc = frappe.get_doc({"doctype": "Employee",
+#                                   "first_name": user['first_name'],
+#                                   "last_name": user['last_name'],
+#                                   "gender": "Other",
+#                                   "employee_number": user['first_name'] + user['last_name'],
+#                                   "date_of_birth": frappe.utils.get_datetime().date(),
+#                                   "date_of_joining": (frappe.utils.get_datetime() + timedelta(days=1)).date()})
+#         emp_doc.insert(ignore_permissions=True)
+#         emp_name = emp_doc.name
+#
+#     sales_person = frappe.db.sql("""SELECT name FROM `tabSales Person`
+#                                    WHERE name=%s""", (user['first_name'] + ' ' + user['last_name']))
+#     sales_person_name = ""
+#     if sales_person != ():
+#         sales_person_name = sales_person[0][0]
+#     else:
+#         sales_person_doc = frappe.get_doc({"doctype": "Sales Person",
+#                                            "sales_person_name": user['first_name'] + ' ' + user['last_name'],
+#                                            "employee": emp_name,
+#                                            "parent_sales_person": "Sales Team"})
+#         sales_person_doc.insert(ignore_permissions=True)
+#         sales_person_name = sales_person_doc.name

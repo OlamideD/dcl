@@ -113,6 +113,7 @@ def make_stock_entry(**args):
     args.serial_no = serial_number
     s.set_posting_time = args.set_posting_time
     s.posting_time = str(args.posting_time)
+    s.posting_date = str(args.posting_date)
     # print args.valuation_rate
     # print "Stock entry: ",s.posting_time
     s.append("items", {
