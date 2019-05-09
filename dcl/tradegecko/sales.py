@@ -8,6 +8,12 @@ from dcl.inflow_import.stock import make_stock_entry
 from dateutil import parser
 from datetime import timedelta
 
+def check_stock():
+    from erpnext.stock.stock_balance import get_balance_qty_from_sle, get_reserved_qty
+    get_bal = get_balance_qty_from_sle('1100-1090', 'Primary Location - DCL')
+    reserved_qty = get_reserved_qty('1100-1090', 'Primary Location - DCL')
+    print get_bal,reserved_qty
+
 def make_delivery(fulfilled_items,current_order,datepaid):
     #against_sales_order
     # print current_order
@@ -58,7 +64,7 @@ def make_delivery(fulfilled_items,current_order,datepaid):
 
 status_map = {"draft":0,"received":1,"finalized":1,"fulfilled":1,"active":0}
 # bench --site dcl2 execute dcl.tradegecko.sales.gecko_orders --kwargs "{'page':1,'replace':0,'order_number':'SO5271'}"
-def gecko_orders(page=1,replace=0,order_number=""):
+def gecko_orders(page=1,replace=0,order_number="", skip_orders=[]):
     access_token = "6daee46c0b4dbca8baac12dbb0e8b68e93934608c510bb41a770bbbd8c8a7ca5"
     refresh_token = "76098f0a7f66233fe97f160980eae15a9a7007a5f5b7b641f211748d58e583ea"
     # tg = TradeGeckoRestClient(access_token, refresh_token)
@@ -83,6 +89,10 @@ def gecko_orders(page=1,replace=0,order_number=""):
             exists_po = frappe.db.sql("""SELECT Count(*) FROM `tabSales Order` WHERE name=%s""", (o['order_number']))
             if exists_po[0][0] > 0:
                 continue
+
+        if o['order_number'] in skip_orders:
+            continue
+
         remove_imported_data(o["order_number"])
         print o
         if o['assignee_id']:
@@ -247,130 +257,168 @@ def gecko_orders(page=1,replace=0,order_number=""):
             SI_items.append(SI_item)
 
         # print SI_items
+        if SI_items:
+            supplier_company = tg.company.get(o['company_id'])['company']
+            # print supplier_company
 
-        supplier_company = tg.company.get(o['company_id'])['company']
-        # print supplier_company
+            # CREATE SUPPLIER IF NOT EXISTS
+            exists_supplier = frappe.db.sql("""SELECT Count(*) FROM `tabCustomer` WHERE name=%s""",
+                                            (supplier_company['name']))
+            if exists_supplier[0][0] == 0:
+                frappe.get_doc({"doctype": "Customer", "customer_name": supplier_company['name'],
+                                "customer_group": "All Customer Groups", "customer_type": "Company",
+                                "account_manager":"Dummy"}).insert()
+                frappe.db.commit()
 
-        # CREATE SUPPLIER IF NOT EXISTS
-        exists_supplier = frappe.db.sql("""SELECT Count(*) FROM `tabCustomer` WHERE name=%s""",
-                                        (supplier_company['name']))
-        if exists_supplier[0][0] == 0:
-            frappe.get_doc({"doctype": "Customer", "customer_name": supplier_company['name'],
-                            "customer_group": "All Customer Groups", "customer_type": "Company",
-                            "account_manager":"Dummy"}).insert()
+            sales_team = []
+            if sales_person_name:
+                sales_team = [{"sales_person":sales_person_name,"allocated_percentage":100.00}]
+            SI_dict = {"doctype": "Sales Order",
+                       "title": supplier_company['name'],
+                       "customer": supplier_company['name'],
+                       "posting_date": created_at.date(),
+                       "schedule_date": created_at.date(),  # TODO + 30 days
+                       "transaction_date": created_at.date(),
+                       "due_date": created_at.date(),
+                       "delivery_date": created_at.date(),
+                       "items": SI_items,
+                       "docstatus": status_map[o["status"]],
+                       "inflow_file": current_order,
+                       "currency": currency['iso'],
+                       "conversion_rate": currency_rate,
+                       "sales_team":sales_team
+                       }
+
+            if o['status'] != "draft" and o['status'] != "active":
+                if o['invoices']:
+                    for item in SI_items:
+                        # check stocks first
+                        # get_balance_qty_from_sle
+                        # /home/jvfiel/frappe-v11/apps/erpnext/erpnext/stock/stock_balance.py
+                        from erpnext.stock.stock_balance import get_balance_qty_from_sle, get_reserved_qty
+                        get_bal = get_balance_qty_from_sle(item["item_code"], to_warehouse['label'] + " - DCL")
+                        reserved_qty = get_reserved_qty(item["item_code"], to_warehouse['label'] + " - DCL")
+                        print item["item_code"], to_warehouse['label'] + " - DCL"
+                        print "rsvd qty ", reserved_qty
+                        print "bal", (float(get_bal))
+                        print "need", item['qty']
+                        net_bal = (float(get_bal) - float(reserved_qty) - item['qty'])
+                        print "net bal", net_bal
+
+                        reqd_qty = 0
+                        if net_bal < 0:
+                            # reqd_qty = float(item['qty']) - abs(float(item['qty']))
+                            # print "itm qty", float(item['qty'])
+                            reqd_qty = abs(net_bal)
+                            # reqd_qty = abs(net_bal)+float(item['qty'])
+                            print "req qty", reqd_qty
+                            make_stock_entry(item_code=item["item_code"], qty=reqd_qty,
+                                             to_warehouse=to_warehouse['label'] + " - DCL",
+                                             valuation_rate=1, remarks="This is affected by data import. ",
+                                             posting_date=created_at.date(),
+                                             posting_time=str(created_at.time()),
+                                             set_posting_time=1, inflow_file=current_order)
+                            frappe.db.commit()
+                            print "qty after stock ent", get_balance_qty_from_sle(item["item_code"],
+                                                                                  to_warehouse['label'] + " - DCL")
+                        elif net_bal == 0:
+                            reqd_qty = float(item['qty'])
+
+
+            SI = frappe.get_doc(SI_dict)
+            SI_created = SI.insert(ignore_permissions=True)
+            frappe.db.commit()
+            rename_doc("Sales Order", SI_created.name, o['order_number'], force=True)
             frappe.db.commit()
 
-        sales_team = []
-        if sales_person_name:
-            sales_team = [{"sales_person":sales_person_name,"allocated_percentage":100.00}]
-        SI_dict = {"doctype": "Sales Order",
-                   "title": supplier_company['name'],
-                   "customer": supplier_company['name'],
-                   "posting_date": created_at.date(),
-                   "schedule_date": created_at.date(),  # TODO + 30 days
-                   "transaction_date": created_at.date(),
-                   "due_date": created_at.date(),
-                   "delivery_date": created_at.date(),
-                   "items": SI_items,
-                   "docstatus": status_map[o["status"]],
-                   "inflow_file": current_order,
-                   "currency": currency['iso'],
-                   "conversion_rate": currency_rate,
-                   "sales_team":sales_team
-                   }
+            if o['status'] != "draft" and o['status'] != "active":
+                # if o['invoices']:
+                #     for item in SI_items:
+                #         #check stocks first
+                #         #get_balance_qty_from_sle
+                #         #/home/jvfiel/frappe-v11/apps/erpnext/erpnext/stock/stock_balance.py
+                #         from erpnext.stock.stock_balance import get_balance_qty_from_sle,get_reserved_qty
+                #         get_bal = get_balance_qty_from_sle(item["item_code"],to_warehouse['label'] + " - DCL")
+                #         reserved_qty = get_reserved_qty(item["item_code"],to_warehouse['label'] + " - DCL")
+                #         print item["item_code"], to_warehouse['label'] + " - DCL"
+                #         print "rsvd qty ", reserved_qty
+                #         print "bal", (float(get_bal))
+                #         print "need", item['qty']
+                #         net_bal = (float(get_bal)-float(reserved_qty)-item['qty'])
+                #         print "net bal", net_bal
+                #
+                #         reqd_qty = 0
+                #         if net_bal < 0:
+                #             # reqd_qty = float(item['qty']) - abs(float(item['qty']))
+                #             # print "itm qty", float(item['qty'])
+                #             reqd_qty = abs(net_bal)
+                #             # reqd_qty = abs(net_bal)+float(item['qty'])
+                #             print "req qty", reqd_qty
+                #             make_stock_entry(item_code=item["item_code"], qty=reqd_qty,
+                #                              to_warehouse=to_warehouse['label'] + " - DCL",
+                #                              valuation_rate=1, remarks="This is affected by data import. ",
+                #                              posting_date=created_at.date(),
+                #                              posting_time=str(created_at.time()),
+                #                              set_posting_time=1, inflow_file=current_order)
+                #             frappe.db.commit()
+                #             print "qty after stock ent", get_balance_qty_from_sle(item["item_code"],to_warehouse['label'] + " - DCL")
+                #         elif net_bal == 0:
+                #             reqd_qty = float(item['qty'])
+                for i in o['invoices']:
+                    inv = test_xero(i['invoice_number'])
+                    pi = make_invoice(o["order_number"],created_at)
+                    # print inv
+                    frappe.db.commit()
+                    rename_doc("Sales Invoice", pi.name, i['invoice_number'], force=True)
+                    frappe.db.commit()
+                    if inv[0]['AmountPaid']:
+                        print "paid"
+                        payment_request = make_payment_request(dt="Sales Invoice", dn=i['invoice_number'], recipient_id="",
+                                                               submit_doc=True, mute_email=True, use_dummy_message=True,
+                                                               grand_total=float(o["total"]),
+                                                               posting_date=created_at.date(), posting_time=str(created_at.time()),
+                                                               inflow_file=current_order)
 
-        SI = frappe.get_doc(SI_dict)
-        SI_created = SI.insert(ignore_permissions=True)
-        frappe.db.commit()
-        rename_doc("Sales Order", SI_created.name, o['order_number'], force=True)
-        frappe.db.commit()
+                        # if SI_dict["PaymentStatus"] != "Invoiced":
+                        payment_entry = frappe.get_doc(make_payment_entry(payment_request.name))
+                        payment_entry.posting_date = created_at.date()
+                        payment_entry.posting_time = str(created_at.time())
+                        payment_entry.set_posting_time = 1
+                        # print "             ",pi.rounded_total,payment_entry.paid_amount
+                        # if SI_dict["PaymentStatus"] == "Paid":
+                        payment_entry.paid_amount = pi.rounded_total
 
-        if o['status'] != "draft" and o['status'] != "active":
-            if o['invoices']:
-                for item in SI_items:
-                    #check stocks first
-                    #get_balance_qty_from_sle
-                    #/home/jvfiel/frappe-v11/apps/erpnext/erpnext/stock/stock_balance.py
-                    from erpnext.stock.stock_balance import get_balance_qty_from_sle,get_reserved_qty
-                    get_bal = get_balance_qty_from_sle(item["item_code"],to_warehouse['label'] + " - DCL")
-                    reserved_qty = get_reserved_qty(item["item_code"],to_warehouse['label'] + " - DCL")
-                    print "rsvd qty ", reserved_qty
-                    print "bal", (float(get_bal)), item['qty'], item["item_code"], to_warehouse['label'] + " - DCL"
-                    net_bal = (float(get_bal) - float(reserved_qty)-item['qty'])
-                    print "net bal", net_bal
-
-                    reqd_qty = 0
-                    if net_bal < 0:
-                        # reqd_qty = float(item['qty']) - abs(float(item['qty']))
-                        # print "itm qty", float(item['qty'])
-                        reqd_qty = abs(net_bal)
-                        # reqd_qty = abs(net_bal)+float(item['qty'])
-                        print "req qty", reqd_qty
-                        make_stock_entry(item_code=item["item_code"], qty=reqd_qty,
-                                         to_warehouse=to_warehouse['label'] + " - DCL",
-                                         valuation_rate=1, remarks="This is affected by data import. ",
-                                         posting_date=created_at.date(),
-                                         posting_time=str(created_at.time()),
-                                         set_posting_time=1, inflow_file=current_order)
-                        frappe.db.commit()
-                        print "qty after stock ent", get_balance_qty_from_sle(item["item_code"],to_warehouse['label'] + " - DCL")
-                    elif net_bal == 0:
-                        reqd_qty = float(item['qty'])
-
-
-                    print "================================="
-            for i in o['invoices']:
-                inv = test_xero(i['invoice_number'])
-                pi = make_invoice(o["order_number"],SI_dict,created_at)
-                # print inv
-                if inv[0]['AmountPaid']:
-                    print "paid"
-                    payment_request = make_payment_request(dt="Sales Invoice", dn=pi.name, recipient_id="",
-                                                           submit_doc=True, mute_email=True, use_dummy_message=True,
-                                                           grand_total=float(o["total"]),
-                                                           posting_date=created_at.date(), posting_time=str(created_at.time()),
-                                                           inflow_file=current_order)
-
-                    # if SI_dict["PaymentStatus"] != "Invoiced":
-                    payment_entry = frappe.get_doc(make_payment_entry(payment_request.name))
-                    payment_entry.posting_date = created_at.date()
-                    payment_entry.posting_time = str(created_at.time())
-                    payment_entry.set_posting_time = 1
-                    # print "             ",pi.rounded_total,payment_entry.paid_amount
-                    # if SI_dict["PaymentStatus"] == "Paid":
-                    payment_entry.paid_amount = pi.rounded_total
-
-                    # else:
-                    #     payment_entry.paid_amount = float(SI_dict["AmountPaid"])
-                    payment_entry.inflow_file = current_order
-                    payment_entry.submit()
-                    # frappe.db.commit()
-                else:
-                    print "unpaid"
+                        # else:
+                        #     payment_entry.paid_amount = float(SI_dict["AmountPaid"])
+                        payment_entry.inflow_file = current_order
+                        payment_entry.submit()
+                        # frappe.db.commit()
+                    else:
+                        print "unpaid"
 
 
-                for i in o['fulfillment_ids']:
-                    fills = tg.fulfillment_line_item.filter(fulfillment_id = i)
-                    # print fills
-                    # print SI_items
-                    fill_items = fills['fulfillment_line_items']
-                    for j in fill_items:
-                        # print j
-                        for item in SI_items:
-                            if j['variant_id'] == item['variant_id']:
-                                j.update(item)
-                    # print fill_items
-                    print " making delivery. "
-                    print " making delivery. "
-                    print " making delivery. "
-                    print " making delivery. "
-                    print " making delivery. "
-                    print fill_items
-                    if fill_items:
-                        make_delivery(fill_items,current_order,created_at)
+                    for i in o['fulfillment_ids']:
+                        fills = tg.fulfillment_line_item.filter(fulfillment_id = i)
+                        # print fills
+                        # print SI_items
+                        fill_items = fills['fulfillment_line_items']
+                        for j in fill_items:
+                            # print j
+                            for item in SI_items:
+                                if j['variant_id'] == item['variant_id']:
+                                    j.update(item)
+                        # print fill_items
+                        # print " making delivery. "
+                        # print " making delivery. "
+                        # print " making delivery. "
+                        # print " making delivery. "
+                        # print " making delivery. "
+                        # print fill_items
+                        if fill_items:
+                            make_delivery(fill_items,current_order,created_at)
 
-        frappe.db.commit()
-        # break
+            frappe.db.commit()
+            # break
 
 """
 Consumer Key: 6QFRVEGFH8ODSCDVPVSASMJ0JUWYLG
@@ -399,7 +447,7 @@ def test_xero(id):
         # break
 
 
-def make_invoice(sales_order_name,SI_dict,datepaid):
+def make_invoice(sales_order_name,datepaid):
     # datepaid = SI_dict['DatePaid']
     # if not datepaid:
     #     datepaid = SI_dict["OrderDate"]
@@ -523,6 +571,25 @@ def remove_imported_data(file,force=0):
 
     for i,si in enumerate(SIs):
         si_doc = frappe.get_doc("Sales Order", si[0])
+        if si_doc.docstatus == 1:
+            si_doc.cancel()
+        si_doc.delete()
+        if counter >= stop:
+            print "Commit"
+            # frappe.db.commit()
+            counter = 0
+        counter += 1
+
+    frappe.db.commit()
+
+    if force == 1:
+        SIs = frappe.db.sql("""SELECT name FROM `tabStock Entry`""")
+    else:
+        SIs = frappe.db.sql("""SELECT name FROM `tabStock Entry` WHERE inflow_file=%s""",(file))
+    print "*removing dns*"
+    print SIs
+    for i,si in enumerate(SIs):
+        si_doc = frappe.get_doc("Stock Entry", si[0])
         if si_doc.docstatus == 1:
             si_doc.cancel()
         si_doc.delete()
