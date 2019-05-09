@@ -12,7 +12,7 @@ def check_stock():
     from erpnext.stock.stock_balance import get_balance_qty_from_sle, get_reserved_qty
     get_bal = get_balance_qty_from_sle('1100-1090', 'Primary Location - DCL')
     reserved_qty = get_reserved_qty('1100-1090', 'Primary Location - DCL')
-    print get_bal,reserved_qty
+    # print get_bal,reserved_qty
 
 def make_delivery(fulfilled_items,current_order,datepaid):
     #against_sales_order
@@ -131,17 +131,6 @@ def gecko_orders(page=1,replace=0,order_number="", skip_orders=[]):
 
 
         currency = tg.currency.get(o['currency_id'])['currency']
-        # if o['invoices']:
-        #     inv = test_xero(o['invoices'][0]['invoice_number'])
-        #     # make_invoice(o["order_number"],SI_dict,created_at)
-        #     # print inv[0]
-        #     if inv[0]['AmountPaid']:
-        #         print "paid"
-        #         currency = {'iso':inv[0]['CurrencyCode'],'rate':inv[0]['CurrencyRate']}
-        #     else:
-        #         continue
-        # else:
-        #     continue
         created_at = parser.parse(o["created_at"])
         # received_at = parser.parse(o["received_at"])
         # due_at = parser.parse(o["due_at"])
@@ -245,8 +234,8 @@ def gecko_orders(page=1,replace=0,order_number="", skip_orders=[]):
                 "description": item_description,
                 "item_name": item_name,
                 "item_code": item_code,
-                "rate": line_item["price"],
-                "price_list_rate": line_item["price"],
+                "rate": round(float(line_item["price"])),
+                "price_list_rate": round(float(line_item["price"])),
                 "conversion_factor": 1,
                 "uom": "Nos",
                 "expense_account": income_accounts,
@@ -258,6 +247,8 @@ def gecko_orders(page=1,replace=0,order_number="", skip_orders=[]):
                 # "OrderDate": row["OrderDate"]
             }
             SI_items.append(SI_item)
+
+        print SI_items
 
         # print SI_items
         if SI_items:
@@ -289,7 +280,8 @@ def gecko_orders(page=1,replace=0,order_number="", skip_orders=[]):
                        "inflow_file": current_order,
                        "currency": currency['iso'],
                        "conversion_rate": currency_rate,
-                       "sales_team":sales_team
+                       "sales_team":sales_team,
+                       "disable_rounded_total":1
                        }
 
             if o['status'] != "draft" and o['status'] != "active":
@@ -301,12 +293,12 @@ def gecko_orders(page=1,replace=0,order_number="", skip_orders=[]):
                         from erpnext.stock.stock_balance import get_balance_qty_from_sle, get_reserved_qty
                         get_bal = get_balance_qty_from_sle(item["item_code"], to_warehouse['label'] + " - DCL")
                         reserved_qty = get_reserved_qty(item["item_code"], to_warehouse['label'] + " - DCL")
-                        print item["item_code"], to_warehouse['label'] + " - DCL"
-                        print "rsvd qty ", reserved_qty
-                        print "bal", (float(get_bal))
-                        print "need", item['qty']
+                        # print item["item_code"], to_warehouse['label'] + " - DCL"
+                        # print "rsvd qty ", reserved_qty
+                        # print "bal", (float(get_bal))
+                        # print "need", item['qty']
                         net_bal = (float(get_bal) - float(reserved_qty) - item['qty'])
-                        print "net bal", net_bal
+                        # print "net bal", net_bal
 
                         reqd_qty = 0
                         if net_bal < 0:
@@ -314,7 +306,7 @@ def gecko_orders(page=1,replace=0,order_number="", skip_orders=[]):
                             # print "itm qty", float(item['qty'])
                             reqd_qty = abs(net_bal)
                             # reqd_qty = abs(net_bal)+float(item['qty'])
-                            print "req qty", reqd_qty
+                            # print "req qty", reqd_qty
                             make_stock_entry(item_code=item["item_code"], qty=reqd_qty,
                                              to_warehouse=to_warehouse['label'] + " - DCL",
                                              valuation_rate=1, remarks="This is affected by data import. ",
@@ -322,8 +314,8 @@ def gecko_orders(page=1,replace=0,order_number="", skip_orders=[]):
                                              posting_time=str(created_at.time()),
                                              set_posting_time=1, inflow_file=current_order)
                             frappe.db.commit()
-                            print "qty after stock ent", get_balance_qty_from_sle(item["item_code"],
-                                                                                  to_warehouse['label'] + " - DCL")
+                            # print "qty after stock ent", get_balance_qty_from_sle(item["item_code"],
+                            #                                                       to_warehouse['label'] + " - DCL")
                         elif net_bal == 0:
                             reqd_qty = float(item['qty'])
 
@@ -369,16 +361,16 @@ def gecko_orders(page=1,replace=0,order_number="", skip_orders=[]):
                 #             reqd_qty = float(item['qty'])
                 for i in o['invoices']:
                     inv = test_xero(i['invoice_number'])
-                    pi = make_invoice(o["order_number"],created_at)
+                    pi = make_invoice(o["order_number"],created_at,inv)
                     # print inv
                     frappe.db.commit()
                     rename_doc("Sales Invoice", pi.name, i['invoice_number'], force=True)
                     frappe.db.commit()
                     if inv[0]['AmountPaid']:
-                        print "paid"
+                        # print "paid", inv[0]['AmountPaid']
                         payment_request = make_payment_request(dt="Sales Invoice", dn=i['invoice_number'], recipient_id="",
                                                                submit_doc=True, mute_email=True, use_dummy_message=True,
-                                                               grand_total=float(o["total"]),
+                                                               grand_total=float(inv[0]['AmountPaid']),
                                                                posting_date=created_at.date(), posting_time=str(created_at.time()),
                                                                inflow_file=current_order)
 
@@ -389,7 +381,7 @@ def gecko_orders(page=1,replace=0,order_number="", skip_orders=[]):
                         payment_entry.set_posting_time = 1
                         # print "             ",pi.rounded_total,payment_entry.paid_amount
                         # if SI_dict["PaymentStatus"] == "Paid":
-                        payment_entry.paid_amount = pi.rounded_total
+                        payment_entry.paid_amount = inv[0]['AmountPaid']
 
                         # else:
                         #     payment_entry.paid_amount = float(SI_dict["AmountPaid"])
@@ -450,19 +442,23 @@ def test_xero(id):
         # break
 
 
-def make_invoice(sales_order_name,datepaid):
+def make_invoice(sales_order_name,datepaid,xero_inv):
     # datepaid = SI_dict['DatePaid']
     # if not datepaid:
     #     datepaid = SI_dict["OrderDate"]
     # else:
     #     datepaid = parser.parse(datepaid)
     # print SI_dict["inflow_file"]
+    total_discount_amt = 0.0
+    for x in xero_inv[0]['LineItems']:
+        total_discount_amt += x['DiscountAmount']
     pi = make_purchase_invoice(sales_order_name)
     pi.inflow_file = sales_order_name
     pi.posting_date = datepaid.date()
     pi.due_date = datepaid.date()
     pi.posting_time = str(datepaid.time())
     pi.set_posting_time = 1
+    pi.discount_amount = total_discount_amt
     pi.save()
     pi.submit()
     frappe.db.commit()
