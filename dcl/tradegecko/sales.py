@@ -204,6 +204,9 @@ def gecko_orders(page=1,replace=0,order_number="", skip_orders=[]):
                 if "X960 Pipettor tip Thermo Scientific Finntip Flex  Filter sterile, free from DNA, " \
                    "DNase and RNasein vacuum sealed sterilized tip racks polypropylene tip," in item_name:
                     item_name = "X960 Pipettor tip Thermo Scientific Finntip Flex Filter"
+                if "X960 Pipettor tip Thermo Scientific Finntip Flex Filter sterile free from DNA DNase " \
+                   "and RNasein vacuum sealed sterilized tip racks polypropylene tip polyethylene matrix " in item_name:
+                    item_name = "X960 Pipettor tip Thermo Scientific Finntip Flex Filter"
 
                 if "Stericup-GV, 0.22 " in item_code:
                     item_code = "Stericup-GV"
