@@ -95,39 +95,41 @@ def gecko_orders(page=1,replace=0,order_number="", skip_orders=[]):
 
         remove_imported_data(o["order_number"])
         print o
+        sales_person_name = ""
         if o['assignee_id']:
-            user = tg.user.get(o['assignee_id'])['user']
-            # print user
+            if 'user' in tg.user.get(o['assignee_id']):
+                user = tg.user.get(o['assignee_id'])['user']
+                # print user
 
-            emp = frappe.db.sql("""SELECT name FROM `tabEmployee`
-                    WHERE first_name=%s and last_name=%s""",(user['first_name'],user['last_name']))
-            emp_name = ""
-            if emp != ():
-                emp_name = emp[0][0]
-            else:
-                #create emp
-                emp_doc = frappe.get_doc({"doctype":"Employee",
-                                          "first_name":user['first_name'],
-                                          "last_name":user['last_name'],
-                                          "gender":"Other",
-                                          "employee_number":user['first_name']+user['last_name'],
-                                          "date_of_birth":frappe.utils.get_datetime().date(),
-                                          "date_of_joining":(frappe.utils.get_datetime() + timedelta(days=1)).date()})
-                emp_doc.insert(ignore_permissions=True)
-                emp_name = emp_doc.name
+                emp = frappe.db.sql("""SELECT name FROM `tabEmployee`
+                        WHERE first_name=%s and last_name=%s""",(user['first_name'],user['last_name']))
+                emp_name = ""
+                if emp != ():
+                    emp_name = emp[0][0]
+                else:
+                    #create emp
+                    emp_doc = frappe.get_doc({"doctype":"Employee",
+                                              "first_name":user['first_name'],
+                                              "last_name":user['last_name'],
+                                              "gender":"Other",
+                                              "employee_number":user['first_name']+user['last_name'],
+                                              "date_of_birth":frappe.utils.get_datetime().date(),
+                                              "date_of_joining":(frappe.utils.get_datetime() + timedelta(days=1)).date()})
+                    emp_doc.insert(ignore_permissions=True)
+                    emp_name = emp_doc.name
 
-            sales_person = frappe.db.sql("""SELECT name FROM `tabSales Person`
-                                WHERE name=%s""", (user['first_name'] +' '+user['last_name']))
-            sales_person_name = ""
-            if sales_person != ():
-                sales_person_name = sales_person[0][0]
-            else:
-                sales_person_doc = frappe.get_doc({"doctype": "Sales Person",
-                                          "sales_person_name": user['first_name'] +' '+user['last_name'],
-                                                   "employee":emp_name,
-                                                   "parent_sales_person":"Sales Team"})
-                sales_person_doc.insert(ignore_permissions=True)
-                sales_person_name = sales_person_doc.name
+                sales_person = frappe.db.sql("""SELECT name FROM `tabSales Person`
+                                    WHERE name=%s""", (user['first_name'] +' '+user['last_name']))
+                sales_person_name = ""
+                if sales_person != ():
+                    sales_person_name = sales_person[0][0]
+                else:
+                    sales_person_doc = frappe.get_doc({"doctype": "Sales Person",
+                                              "sales_person_name": user['first_name'] +' '+user['last_name'],
+                                                       "employee":emp_name,
+                                                       "parent_sales_person":"Sales Team"})
+                    sales_person_doc.insert(ignore_permissions=True)
+                    sales_person_name = sales_person_doc.name
 
 
         currency = tg.currency.get(o['currency_id'])['currency']
@@ -599,35 +601,3 @@ def remove_imported_data(file,force=0):
         counter += 1
 
     frappe.db.commit()
-
-
-# def create_dummy():
-#     emp = frappe.db.sql("""SELECT name FROM `tabEmployee`
-#                        WHERE first_name=%s and last_name=%s""", (user['first_name'], user['last_name']))
-#     emp_name = ""
-#     if emp != ():
-#         emp_name = emp[0][0]
-#     else:
-#         # create emp
-#         emp_doc = frappe.get_doc({"doctype": "Employee",
-#                                   "first_name": user['first_name'],
-#                                   "last_name": user['last_name'],
-#                                   "gender": "Other",
-#                                   "employee_number": user['first_name'] + user['last_name'],
-#                                   "date_of_birth": frappe.utils.get_datetime().date(),
-#                                   "date_of_joining": (frappe.utils.get_datetime() + timedelta(days=1)).date()})
-#         emp_doc.insert(ignore_permissions=True)
-#         emp_name = emp_doc.name
-#
-#     sales_person = frappe.db.sql("""SELECT name FROM `tabSales Person`
-#                                    WHERE name=%s""", (user['first_name'] + ' ' + user['last_name']))
-#     sales_person_name = ""
-#     if sales_person != ():
-#         sales_person_name = sales_person[0][0]
-#     else:
-#         sales_person_doc = frappe.get_doc({"doctype": "Sales Person",
-#                                            "sales_person_name": user['first_name'] + ' ' + user['last_name'],
-#                                            "employee": emp_name,
-#                                            "parent_sales_person": "Sales Team"})
-#         sales_person_doc.insert(ignore_permissions=True)
-#         sales_person_name = sales_person_doc.name
