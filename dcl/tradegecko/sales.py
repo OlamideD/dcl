@@ -419,7 +419,7 @@ def gecko_orders(page=1,replace=0,order_number="", skip_orders=[]):
 
             frappe.db.commit()
             # break
-
+    print "DONE DONE DONE DONE DONE"
 """
 Consumer Key: 6QFRVEGFH8ODSCDVPVSASMJ0JUWYLG
 Consumer Secret: ONCAAWFW2ZWP6KHLXVAWPTNXSJXHAW
