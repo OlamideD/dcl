@@ -97,7 +97,7 @@ def gecko_orders(page=1,replace=0,order_number="", skip_orders=[]):
         print o
         sales_person_name = ""
         if o['assignee_id']:
-            if 'user' in tg.user.get(o['assignee_id']):
+            if tg.user.get(o['assignee_id']):
                 user = tg.user.get(o['assignee_id'])['user']
                 # print user
 
@@ -364,12 +364,12 @@ def gecko_orders(page=1,replace=0,order_number="", skip_orders=[]):
                 for i in o['invoices']:
                     inv = test_xero(i['invoice_number'])
                     pi = make_invoice(o["order_number"],created_at,inv)
-                    # print inv
+                    print inv
                     frappe.db.commit()
                     rename_doc("Sales Invoice", pi.name, i['invoice_number'], force=True)
                     frappe.db.commit()
                     if inv[0]['AmountPaid']:
-                        # print "paid", inv[0]['AmountPaid']
+                        print "paid", inv[0]['AmountPaid']
                         payment_request = make_payment_request(dt="Sales Invoice", dn=i['invoice_number'], recipient_id="",
                                                                submit_doc=True, mute_email=True, use_dummy_message=True,
                                                                grand_total=float(inv[0]['AmountPaid']),
@@ -454,13 +454,15 @@ def make_invoice(sales_order_name,datepaid,xero_inv):
     total_discount_amt = 0.0
     for x in xero_inv[0]['LineItems']:
         total_discount_amt += x['DiscountAmount']
+    print total_discount_amt
     pi = make_purchase_invoice(sales_order_name)
+    print pi.grand_total
     pi.inflow_file = sales_order_name
     pi.posting_date = datepaid.date()
     pi.due_date = datepaid.date()
     pi.posting_time = str(datepaid.time())
     pi.set_posting_time = 1
-    pi.discount_amount = total_discount_amt
+    pi.discount_amount = round(total_discount_amt)
     pi.save()
     pi.submit()
     frappe.db.commit()
