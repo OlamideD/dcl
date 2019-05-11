@@ -8,7 +8,7 @@ from dcl.inflow_import.stock import make_stock_entry
 from dateutil import parser
 from datetime import timedelta
 
-# bench --site dcl2 execute dcl.tradegecko.contacts.get_company
+# bench --site dcl2 execute dcl.tradegecko.contacts.get_company --kwargs "{'page':1,'replace':0}"
 def get_company(page=1,replace=0,order_number="", skip_orders=[]):
     access_token = "6daee46c0b4dbca8baac12dbb0e8b68e93934608c510bb41a770bbbd8c8a7ca5"
     refresh_token = "76098f0a7f66233fe97f160980eae15a9a7007a5f5b7b641f211748d58e583ea"
@@ -45,6 +45,11 @@ def get_company(page=1,replace=0,order_number="", skip_orders=[]):
             customer_name = ""
             exists_supplier = frappe.db.sql("""SELECT Count(*),name FROM `tab"""+_type+"""` WHERE name=%s""",
                                             (supplier_company['name']))
+
+
+
+
+
             if exists_supplier[0][0] == 0:
                 if _type == "Customer":
                     new_cust = frappe.get_doc({"doctype": "Customer", "customer_name": supplier_company['name'],
@@ -65,6 +70,14 @@ def get_company(page=1,replace=0,order_number="", skip_orders=[]):
             addresses = tg.address.filter(company_id=supplier_company['id'])
             # print addresses
             for address in addresses['addresses']:
+                # Add Country
+                if address['country']:
+                    exists_country = frappe.db.sql("""SELECT Count(*),name FROM `tabCountry` WHERE name=%s""",
+                                                   (address['country']))
+                    if exists_country[0][0] == 0:
+                        new_cntry = frappe.get_doc({"doctype": "Country", "country_name": address['country']})
+                        new_cntry.insert()
+                        frappe.db.commit()
                 print address
                 exists_supplier = frappe.db.sql("""SELECT Count(*)
                                       FROM `tabAddress`
@@ -100,6 +113,13 @@ def get_company(page=1,replace=0,order_number="", skip_orders=[]):
             # print addresses
             for address in addresses['contacts']:
                 print address
+                if address['country']:
+                    exists_country = frappe.db.sql("""SELECT Count(*),name FROM `tabCountry` WHERE name=%s""",
+                                                   (address['country']))
+                    if exists_country[0][0] == 0:
+                        new_cntry = frappe.get_doc({"doctype": "Country", "country_name": address['country']})
+                        new_cntry.insert()
+                        frappe.db.commit()
                 exists_supplier = frappe.db.sql("""SELECT Count(*)
                                                     FROM `tabContact`
                                                     INNER JOIN `tabDynamic Link`
