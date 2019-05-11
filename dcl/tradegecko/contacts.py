@@ -40,9 +40,6 @@ def get_company(page=1,replace=0,order_number="", skip_orders=[]):
             _type = "Customer"
         elif supplier_company['company_type'] == 'supplier':
             _type = "Supplier"
-        else:
-            _type = ""
-            print supplier_company['company_type']
 
         if _type:
             customer_name = ""
