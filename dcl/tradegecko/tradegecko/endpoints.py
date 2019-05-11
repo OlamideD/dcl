@@ -30,6 +30,13 @@ class Address(ApiEndpoint):
         self.required_fields = ['company_id', 'label']
         self._data_name = 'address'
 
+class Contact(ApiEndpoint):
+    def __init__(self, base_uri, access_token):
+        super(Contact, self).__init__(base_uri, access_token)
+        self.uri = self.base_uri + 'contacts/%s'
+        self.required_fields = ['company_id', 'label']
+        self._data_name = 'contact'
+
 
 class Location(ApiEndpoint):
     def __init__(self, base_data, access_token):

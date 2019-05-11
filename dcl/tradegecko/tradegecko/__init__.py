@@ -1,6 +1,6 @@
 import os
 
-from endpoints import Company, Address, Variant, Product, \
+from endpoints import Company, Address,Contact, Variant, Product, \
     Order, Composition, Location, PurchaseOrder, PurchaseOrderLineItem, \
     StockTransfer, StockTransferLineItem,OrderLineItem, Invoice, InvoiceLineItem, \
     Fulfillment,FulfillmentLineItem, Currency,User
@@ -22,6 +22,7 @@ class TradeGeckoRestClient(object):
         self.company = Company(self.base_uri, self.access_token)
         self.user = User(self.base_uri, self.access_token)
         self.address = Address(self.base_uri, self.access_token)
+        self.contact = Contact(self.base_uri, self.access_token)
         self.location = Location(self.base_uri, self.access_token)
         self.variant = Variant(self.base_uri, self.access_token)
         self.product = Product(self.base_uri, self.access_token)
