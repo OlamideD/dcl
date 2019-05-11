@@ -113,13 +113,13 @@ def get_company(page=1,replace=0,order_number="", skip_orders=[]):
             # print addresses
             for address in addresses['contacts']:
                 print address
-                if address['country']:
-                    exists_country = frappe.db.sql("""SELECT Count(*),name FROM `tabCountry` WHERE name=%s""",
-                                                   (address['country']))
-                    if exists_country[0][0] == 0:
-                        new_cntry = frappe.get_doc({"doctype": "Country", "country_name": address['country']})
-                        new_cntry.insert()
-                        frappe.db.commit()
+                # if address['country']:
+                #     exists_country = frappe.db.sql("""SELECT Count(*),name FROM `tabCountry` WHERE name=%s""",
+                #                                    (address['country']))
+                #     if exists_country[0][0] == 0:
+                #         new_cntry = frappe.get_doc({"doctype": "Country", "country_name": address['country']})
+                #         new_cntry.insert()
+                #         frappe.db.commit()
                 exists_supplier = frappe.db.sql("""SELECT Count(*)
                                                     FROM `tabContact`
                                                     INNER JOIN `tabDynamic Link`
