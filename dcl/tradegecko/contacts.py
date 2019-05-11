@@ -31,15 +31,18 @@ def get_company(page=1,replace=0,order_number="", skip_orders=[]):
     # CREATE SUPPLIER IF NOT EXISTS
     for supplier_company in orders:
         _type = ""
-        # if supplier_company['company_type'] == 'business': #supplier or business
+        # if supplier_company['company_type'] == 'business' or supplier_company['company_type'] == 'supplier': #supplier or business
         #     continue
-        if supplier_company['contact_ids'] == []:
-            continue
+        # if supplier_company['contact_ids'] == []:
+        #     continue
         print supplier_company
-        if supplier_company['company_type'] == 'business':
+        if supplier_company['company_type'] == 'business' or supplier_company['company_type'] == 'supplier':
             _type = "Customer"
         elif supplier_company['company_type'] == 'supplier':
             _type = "Supplier"
+        else:
+            _type = ""
+            print supplier_company['company_type']
 
         if _type:
             customer_name = ""
@@ -148,4 +151,4 @@ def get_company(page=1,replace=0,order_number="", skip_orders=[]):
                 else:
                     print "exists address"
 
-        print "DONE DONE DONE DONE"
+    print "DONE DONE DONE DONE"
