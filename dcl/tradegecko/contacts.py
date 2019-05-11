@@ -17,7 +17,7 @@ def get_company(page=1,replace=0,order_number="", skip_orders=[]):
     # print tg.company.all()['companies'][0]
     print order_number
     if not order_number:
-        orders = tg.company.all(page=page,limit=250)['companies']
+        orders = tg.company.all(page=page,limit=50)['companies']
     else:
         orders = tg.company.filter(ids=[order_number])['companies']
     # print orders
