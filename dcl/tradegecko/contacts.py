@@ -36,7 +36,7 @@ def get_company(page=1,replace=0,order_number="", skip_orders=[]):
         # if supplier_company['contact_ids'] == []:
         #     continue
         print supplier_company
-        if supplier_company['company_type'] == 'business' or supplier_company['company_type'] == 'supplier':
+        if supplier_company['company_type'] == 'business' or supplier_company['company_type'] == 'consumer':
             _type = "Customer"
         elif supplier_company['company_type'] == 'supplier':
             _type = "Supplier"
