@@ -8,19 +8,18 @@ from dcl.inflow_import.stock import make_stock_entry
 from dateutil import parser
 from datetime import timedelta
 
-# bench --site dcl2 execute dcl.tradegecko.contacts.get_company --kwargs "{'page':1,'replace':0}"
+# bench --site dcl2 execute dcl.tradegecko.contacts.get_company --kwargs "{'page':1,'replace':0,'order_number':17181799}"
 def get_company(page=1,replace=0,order_number="", skip_orders=[]):
     access_token = "6daee46c0b4dbca8baac12dbb0e8b68e93934608c510bb41a770bbbd8c8a7ca5"
     refresh_token = "76098f0a7f66233fe97f160980eae15a9a7007a5f5b7b641f211748d58e583ea"
     # tg = TradeGeckoRestClient(access_token, refresh_token)
     tg = TradeGeckoRestClient(access_token)
     # print tg.company.all()['companies'][0]
-    # if not order_number:
-
-    orders = tg.company.all(page=page,limit=250)['companies']
-
-    # else:
-    #     orders = tg.order.filter(order_number=order_number)['orders']
+    print order_number
+    if not order_number:
+        orders = tg.company.all(page=page,limit=250)['companies']
+    else:
+        orders = tg.company.filter(ids=[order_number])['companies']
     # print orders
 
     # print orders
@@ -86,11 +85,21 @@ def get_company(page=1,replace=0,order_number="", skip_orders=[]):
                                       WHERE address_line1=%s""",
                                                 (address['address1']))
                 if exists_supplier[0][0] == 0:
+                    _address = address['address1']
+                    address1 = _address
+                    address2 = address['address2']
+                    if len(_address) >= 140:
+                        address1 = _address[:140]
+                        address2 = _address[140:]
+                    else:
+                        address1 = _address
+                        address2 = address['address2']
+
                     addr = frappe.get_doc({"doctype": "Address",
                                     "phone": address['phone_number'],
                                     "city": address['city'] or "Accra",
-                                    "address_line1": address['address1'],
-                                    "address_line2": address['address2'],
+                                    "address_line1": address1,
+                                    "address_line2": address2,
                                     "pincode": address['zip_code'],
                                     "country": address['country'],
                                     "email_id":address['email'],
