@@ -107,6 +107,7 @@ def gecko_orders(page=1,replace=0,order_number="", skip_orders=[]):
             skip = 0
             # if replace == 0:
 
+            print o
 
             exists_po = frappe.db.sql("""SELECT Count(*) FROM `tabSales Order` WHERE name=%s""", (o['order_number']))
             if exists_po[0][0] > 0:
@@ -146,7 +147,6 @@ def gecko_orders(page=1,replace=0,order_number="", skip_orders=[]):
                 print "re-creating SO..."
 
             remove_imported_data(o["order_number"])
-            print o
             sales_person_name = ""
             if o['assignee_id']:
                 if tg.user.get(o['assignee_id']):
