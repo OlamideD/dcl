@@ -69,12 +69,15 @@ def get_company(page=1,replace=0,order_number="", skip_orders=[]):
             addresses = tg.address.filter(company_id=supplier_company['id'])
             # print addresses
             for address in addresses['addresses']:
+                _country = ""
                 # Add Country
                 if address['country']:
-                    exists_country = frappe.db.sql("""SELECT Count(*),name FROM `tabCountry` WHERE name=%s""",
-                                                   (address['country']))
+                    _country = address['country'].strip()
+                    exists_country = frappe.db.sql("""SELECT Count(*) FROM `tabCountry` WHERE country_name=%s""",
+                                                   (address['country'].strip()))
+                    print exists_country,address['country']
                     if exists_country[0][0] == 0:
-                        new_cntry = frappe.get_doc({"doctype": "Country", "country_name": address['country']})
+                        new_cntry = frappe.get_doc({"doctype": "Country", "country_name": address['country'].strip()})
                         new_cntry.insert()
                         frappe.db.commit()
                 print address
@@ -101,7 +104,7 @@ def get_company(page=1,replace=0,order_number="", skip_orders=[]):
                                     "address_line1": address1,
                                     "address_line2": address2,
                                     "pincode": address['zip_code'],
-                                    "country": address['country'],
+                                    "country": _country or "Ghana",
                                     "email_id":address['email'],
                                     "links":[
                                         {
