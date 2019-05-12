@@ -125,6 +125,7 @@ def gecko_orders(page=1,replace=0,order_number="", skip_orders=[]):
                             exists_inv = frappe.get_doc("Sales Invoice", exists_inv[0][0])
                             total_discount_amt = 0.0
                             xero_inv = test_xero(_inv['invoice_number'])
+                            time.sleep(5)
                             for x in xero_inv[0]['LineItems']:
                                 total_discount_amt += x['DiscountAmount']
 
@@ -466,7 +467,7 @@ def gecko_orders(page=1,replace=0,order_number="", skip_orders=[]):
                 frappe.db.commit()
                 # break
             time.sleep(5)
-        time.sleep(20)
+        # time.sleep(20)
     print "DONE DONE DONE DONE DONE"
 """
 Consumer Key: 6QFRVEGFH8ODSCDVPVSASMJ0JUWYLG
