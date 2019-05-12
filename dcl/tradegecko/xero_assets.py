@@ -156,16 +156,25 @@ def get_assets():
             # print o['order_number']
             # print SI_dict
             SI_created = frappe.get_doc(SI_dict).insert()
-            # from frappe.model.rename_doc import rename_doc
+            from frappe.model.rename_doc import rename_doc
             # rename_doc("Purchase Receipt", SI_created.name, row['*AssetNumber'], force=True)
             frappe.db.commit()
 
             for asset in SI_created.items:
                 print asset.asset
                 asst_doc = frappe.get_doc("Asset",asset.asset)
+                asst_doc.available_for_use_date = str(created_at.date())
                 finance_books = asst_doc.append('finance_books', {})
                 finance_books.depreciation_method = "Straight Line"
-                finance_books.total_number_of_depreciations = ""
+                finance_books.total_number_of_depreciations = 96
+                finance_books.frequency_of_depreciation = 12
+                finance_books.depreciation_start_date = created_at.date()
+                finance_books.expected_value_after_useful_life = 0.0
+
+                asst_doc.save()
+                asst_doc.submit()
+                rename_doc("Asset", asst_doc.name, row['*AssetNumber'], force=True)
+
 
             # frappe.get_doc({"doctype": "Asset",
             #                 "location_name": "Accra",
@@ -201,6 +210,11 @@ def remove_imported_data(file,force=0):
                 si_doc.cancel()
             si_doc.delete()
 
+        asst = frappe.db.sql("""SELECT name FROM `tabAsset` WHERE purchase_receipt=%s""", (si[0]))
+        print 'ASSET ', asst
+        asst_doc = {}
+
+
         si_doc = frappe.get_doc("Purchase Receipt", si[0])
         if si_doc.docstatus == 1:
             si_doc.cancel()
@@ -212,14 +226,15 @@ def remove_imported_data(file,force=0):
         counter += 1
         print counter
 
-        asst = frappe.db.sql("""SELECT name FROM `tabAsset` WHERE purchase_receipt=%s""", (si[0]))
-        print asst
+        print "removing: ", si_doc.name
         if asst != ():
-            si_doc = frappe.get_doc("Asset", asst[0][0])
-            print "removing: ", si_doc.name
-            if si_doc.docstatus == 1:
-                si_doc.cancel()
-            si_doc.delete()
+            asst_doc = frappe.get_doc("Asset", asst[0][0])
+
+            if asst_doc.docstatus == 1:
+                asst_doc.cancel()
+            asst_doc.delete()
+
+
 
     frappe.db.commit()
 
