@@ -109,6 +109,7 @@ def gecko_orders(page=1,replace=0,order_number="", skip_orders=[]):
             skip = 0
             # if replace == 0:
 
+            print "########################### PAGE ", start_page, " ###########################"
             print o
 
             exists_po = frappe.db.sql("""SELECT Count(*) FROM `tabSales Order` WHERE name=%s""", (o['order_number']))
@@ -490,8 +491,8 @@ Consumer Secret: ONCAAWFW2ZWP6KHLXVAWPTNXSJXHAW
 
 # bench --site dcl2 execute dcl.tradegecko.sales.test_xero
 def test_xero(id):
-    print "contacting xero api... wait for 5 secs."
-    time.sleep(5)
+    print "contacting xero api... wait for 3 secs."
+    time.sleep(3)
     # from xero import Xero
     # from xero.auth import PublicCredentials
     consumer_key = "06RRGPYM4SJXFEMRODT6F0GYJ42UKA"
