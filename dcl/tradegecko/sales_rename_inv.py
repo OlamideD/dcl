@@ -153,8 +153,10 @@ def gecko_orders(page=1,replace=0,order_number="", skip_orders=[]):
             remove_imported_data(o["order_number"])
             sales_person_name = ""
             if o['assignee_id']:
-                if tg.user.get(o['assignee_id']):
-                    user = tg.user.get(o['assignee_id'])['user']
+                time.sleep(1)
+                _user = tg.user.get(o['assignee_id'])
+                if _user:
+                    user = _user['user']
                     # print user
 
                     emp = frappe.db.sql("""SELECT name FROM `tabEmployee`
@@ -187,7 +189,7 @@ def gecko_orders(page=1,replace=0,order_number="", skip_orders=[]):
                         sales_person_doc.insert(ignore_permissions=True)
                         sales_person_name = sales_person_doc.name
 
-
+            time.sleep(1)
             currency = tg.currency.get(o['currency_id'])['currency']
             created_at = parser.parse(o["created_at"])
             # received_at = parser.parse(o["received_at"])
@@ -204,6 +206,7 @@ def gecko_orders(page=1,replace=0,order_number="", skip_orders=[]):
             #
             # break
             SI_items = []
+            time.sleep(1)
             to_warehouse = tg.location.get(o['stock_location_id'])['location']
 
             exists_warehouse = frappe.db.sql("""SELECT Count(*) FROM `tabWarehouse` WHERE warehouse_name=%s""",
@@ -217,6 +220,7 @@ def gecko_orders(page=1,replace=0,order_number="", skip_orders=[]):
 
             current_order = o["order_number"]
             for i in o['order_line_item_ids']:
+                time.sleep(1)
                 line_item = tg.order_line_item.get(i)['order_line_item']
                 # print line_item
                 exists_cat = frappe.db.sql("""SELECT Count(*),item_code,item_name,description FROM `tabItem`
@@ -226,6 +230,7 @@ def gecko_orders(page=1,replace=0,order_number="", skip_orders=[]):
                 item_name = ""
                 item_description = ""
                 if exists_cat[0][0] == 0:
+                    time.sleep(1)
                     variant = tg.variant.get(line_item['variant_id'])
                     # print variant,line_item['variant_id']
                     # print line_item
@@ -307,6 +312,7 @@ def gecko_orders(page=1,replace=0,order_number="", skip_orders=[]):
 
             # print SI_items
             if SI_items:
+                time.sleep(1)
                 supplier_company = tg.company.get(o['company_id'])['company']
                 # print supplier_company
 
@@ -451,6 +457,7 @@ def gecko_orders(page=1,replace=0,order_number="", skip_orders=[]):
 
 
                         for i in o['fulfillment_ids']:
+                            time.sleep(1)
                             fills = tg.fulfillment_line_item.filter(fulfillment_id = i)
                             # print fills
                             # print SI_items
@@ -472,7 +479,7 @@ def gecko_orders(page=1,replace=0,order_number="", skip_orders=[]):
 
                 frappe.db.commit()
                 # break
-            time.sleep(5)
+            # time.sleep(5)
         # time.sleep(20)
     print "DONE DONE DONE DONE DONE"
 """
