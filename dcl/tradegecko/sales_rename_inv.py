@@ -7,6 +7,7 @@ from erpnext.accounts.doctype.payment_request.payment_request import make_paymen
 from dcl.inflow_import.stock import make_stock_entry
 from dateutil import parser
 from datetime import timedelta
+import time
 
 def check_stock():
     from erpnext.stock.stock_balance import get_balance_qty_from_sle, get_reserved_qty
@@ -71,7 +72,7 @@ def gecko_orders(page=1,replace=0,order_number="", skip_orders=[]):
     tg = TradeGeckoRestClient(access_token)
     # print tg.company.all()['companies'][0]
     if not order_number:
-        orders = tg.order.all(page=page,limit=50)['orders']
+        orders = tg.order.all(page=page,limit=250)['orders']
     else:
         orders = tg.order.filter(order_number=order_number)['orders']
     # print orders
@@ -80,24 +81,61 @@ def gecko_orders(page=1,replace=0,order_number="", skip_orders=[]):
     cost_centers = "Main - DCL"
     # cost_centers = "Main - J"
 
-    for o in orders:
+    for i,o in enumerate(orders):
 
-        if o['invoices'] == []:
-            print "No Invoice"
-            continue
+        if i+1 == 50:
+            print "waiting..."
+            time.sleep(20)
+
+        # if o['invoices'] == []:
+        #     print "No Invoice"
+        #     continue
 
 
         # if o["status"] == "draft" or o['status'] == 'fulfilled': #draft,received,finalized,fulfilled
         #     continue
         # if o['payment_status'] == 'unpaid':
         #     continue
+        skip = 0
         # if replace == 0:
-        #     exists_po = frappe.db.sql("""SELECT Count(*) FROM `tabSales Order` WHERE name=%s""", (o['order_number']))
-        #     if exists_po[0][0] > 0:
-        #         continue
+
+
+        exists_po = frappe.db.sql("""SELECT Count(*) FROM `tabSales Order` WHERE name=%s""", (o['order_number']))
+        if exists_po[0][0] > 0:
+            skip = 1
+            if o['invoices'] != []:
+                for _inv in o['invoices']:
+                    print "checking ",_inv['invoice_number']
+                    exists_inv = frappe.db.sql("""SELECT name FROM `tabSales Invoice` WHERE name=%s""",
+                                               (_inv['invoice_number']))
+                    if exists_inv == (): # check if the inv no. is correct
+                        skip = 0
+                        print "no inv or wrong name inv",_inv['invoice_number']
+                    else:
+                        # check if discounts where applied
+                        exists_inv = frappe.get_doc("Sales Invoice", exists_inv[0][0])
+                        total_discount_amt = 0.0
+                        xero_inv = test_xero(_inv['invoice_number'])
+                        for x in xero_inv[0]['LineItems']:
+                            total_discount_amt += x['DiscountAmount']
+
+                        if exists_inv.discount_amount < total_discount_amt:
+                            skip = 0
+                            print "no discount"
+
+        elif exists_po[0][0] == 0:
+            skip = 0 #dont skip
+            print "SO not found"
+
+
         #
         # if o['order_number'] in skip_orders:
         #     continue
+
+        if skip == 1:
+            continue
+        else:
+            print "re-creating SO..."
 
         remove_imported_data(o["order_number"])
         print o
@@ -253,7 +291,7 @@ def gecko_orders(page=1,replace=0,order_number="", skip_orders=[]):
             }
             SI_items.append(SI_item)
 
-        print SI_items
+        # print SI_items
 
         # print SI_items
         if SI_items:
