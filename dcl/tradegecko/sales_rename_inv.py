@@ -91,9 +91,9 @@ def gecko_orders(page=1,replace=0,order_number="", skip_orders=[]):
 
         for i,o in enumerate(orders):
 
-            if i+1 == 50:
-                print "waiting..."
-                time.sleep(20)
+            # if i+1 == 50:
+            #     print "waiting..."
+            #     time.sleep(20)
 
             # if o['invoices'] == []:
             #     print "No Invoice"
@@ -465,6 +465,7 @@ def gecko_orders(page=1,replace=0,order_number="", skip_orders=[]):
 
                 frappe.db.commit()
                 # break
+            time.sleep(5)
         time.sleep(20)
     print "DONE DONE DONE DONE DONE"
 """
