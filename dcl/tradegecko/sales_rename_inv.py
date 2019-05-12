@@ -91,6 +91,8 @@ def gecko_orders(page=1,replace=0,order_number="", skip_orders=[]):
 
         for i,o in enumerate(orders):
 
+            so_inv = None
+
             # if i+1 == 50:
             #     print "waiting..."
             #     time.sleep(20)
@@ -125,6 +127,7 @@ def gecko_orders(page=1,replace=0,order_number="", skip_orders=[]):
                             exists_inv = frappe.get_doc("Sales Invoice", exists_inv[0][0])
                             total_discount_amt = 0.0
                             xero_inv = test_xero(_inv['invoice_number'])
+                            so_inv = xero_inv
                             # time.sleep(5)
                             for x in xero_inv[0]['LineItems']:
                                 total_discount_amt += x['DiscountAmount']
@@ -412,7 +415,10 @@ def gecko_orders(page=1,replace=0,order_number="", skip_orders=[]):
                     #         elif net_bal == 0:
                     #             reqd_qty = float(item['qty'])
                     for i in o['invoices']:
-                        inv = test_xero(i['invoice_number'])
+                        if so_inv == None:
+                            inv = test_xero(i['invoice_number'])
+                        else:
+                            inv = so_inv
                         pi = make_invoice(o["order_number"],created_at,inv)
                         # print inv
                         frappe.db.commit()
