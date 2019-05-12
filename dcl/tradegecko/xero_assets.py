@@ -183,7 +183,7 @@ def get_assets():
             #                 "purchase_date":str(row['PurchaseDate']),
             #                 "gross_purchase_amount":row['PurchasePrice']}).insert(ignore_permissions=True)
 
-        break
+        # break
 
 def remove_imported_data(file,force=0):
 
