@@ -125,7 +125,7 @@ def gecko_orders(page=1,replace=0,order_number="", skip_orders=[]):
                             exists_inv = frappe.get_doc("Sales Invoice", exists_inv[0][0])
                             total_discount_amt = 0.0
                             xero_inv = test_xero(_inv['invoice_number'])
-                            time.sleep(5)
+                            # time.sleep(5)
                             for x in xero_inv[0]['LineItems']:
                                 total_discount_amt += x['DiscountAmount']
 
@@ -477,6 +477,8 @@ Consumer Secret: ONCAAWFW2ZWP6KHLXVAWPTNXSJXHAW
 
 # bench --site dcl2 execute dcl.tradegecko.sales.test_xero
 def test_xero(id):
+    print "contacting xero api... wait for 5 secs."
+    time.sleep(5)
     # from xero import Xero
     # from xero.auth import PublicCredentials
     consumer_key = "06RRGPYM4SJXFEMRODT6F0GYJ42UKA"
