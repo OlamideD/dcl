@@ -82,7 +82,7 @@ def get_assets():
     for i, row in enumerate(rows):
         print row
         remove_imported_data(row['*AssetNumber'])
-        exists_asset = frappe.db.sql("""SELECT Count(*) FROM `tabAsset` WHERE asset_name=%s""",(row['*AssetName']))
+        exists_asset = frappe.db.sql("""SELECT Count(*) FROM `tabAsset` WHERE name=%s""",(row['*AssetNumber']))
         if exists_asset[0][0]==0:
 
             find_item = frappe.db.sql("""SELECT Count(*),item_code,item_name,description FROM `tabItem`
