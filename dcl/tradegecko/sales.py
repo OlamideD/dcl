@@ -163,9 +163,6 @@ def gecko_orders(page=1,replace=0,order_number="", skip_orders=[]):
         for i in o['order_line_item_ids']:
             line_item = tg.order_line_item.get(i)['order_line_item']
             # print line_item
-            exists_cat = frappe.db.sql("""SELECT Count(*),item_code FROM `tabItem`
-                                    WHERE variant_id=%s""",
-                                       (line_item['variant_id']))
             exists_cat = frappe.db.sql("""SELECT Count(*),item_code,item_name,description FROM `tabItem`
                                     WHERE variant_id=%s""",
                                        (line_item['variant_id']))
