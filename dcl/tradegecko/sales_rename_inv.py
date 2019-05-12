@@ -109,7 +109,7 @@ def gecko_orders(page=1,replace=0,order_number="", skip_orders=[]):
             skip = 0
             # if replace == 0:
 
-            print "########################### PAGE ", start_page, " ###########################"
+            print "########################### PAGE ", start_page-1, " ###########################"
             print o
 
             exists_po = frappe.db.sql("""SELECT Count(*) FROM `tabSales Order` WHERE name=%s""", (o['order_number']))
