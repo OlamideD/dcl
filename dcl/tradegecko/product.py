@@ -36,7 +36,7 @@ def get_products(page=1,replace=0,order_number="", skip_orders=[]):
                 variant_id = order['variant_ids'][0]
 
             # if exists_cat[0][0] == 0:
-            time.sleep(0.5)
+            time.sleep(1)
             variant = tg.variant.get(order['variant_ids'][0])
             # print variant,line_item['variant_id']
             # print line_item
