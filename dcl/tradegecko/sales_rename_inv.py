@@ -71,10 +71,13 @@ def gecko_orders(page=1,replace=0,order_number="", skip_orders=[]):
     # tg = TradeGeckoRestClient(access_token, refresh_token)
     tg = TradeGeckoRestClient(access_token)
     # print tg.company.all()['companies'][0]
-    page_limit = 25
+    if order_number == "":
+        page_limit = 25
+    else:
+        page_limit = 2
     start_page = page
 
-    while start_page < 25:
+    while start_page < page_limit:
 
         print "########################### PAGE ",start_page," ###########################"
         if not order_number:
@@ -426,6 +429,7 @@ def gecko_orders(page=1,replace=0,order_number="", skip_orders=[]):
                             inv = test_xero(i['invoice_number'])
                         else:
                             inv = so_inv
+                        print SI_items
                         pi = make_invoice(o["order_number"],created_at,inv)
                         # print inv
                         frappe.db.commit()
@@ -521,10 +525,14 @@ def make_invoice(sales_order_name,datepaid,xero_inv):
     # print SI_dict["inflow_file"]
     total_discount_amt = 0.0
     for x in xero_inv[0]['LineItems']:
-        total_discount_amt += x['DiscountAmount']
-    # print total_discount_amt
+        total_discount_amt += (round(x['UnitAmount'])*float(x['Quantity']))*(float(x['DiscountRate'])/100)
+    print total_discount_amt
     pi = make_purchase_invoice(sales_order_name)
-    # print pi.grand_total
+    _total = 0.0
+    for i in pi.items:
+        _total += i.amount
+    print _total
+    print pi.grand_total
     pi.inflow_file = sales_order_name
     pi.posting_date = datepaid.date()
     pi.due_date = datepaid.date()
