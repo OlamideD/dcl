@@ -39,7 +39,8 @@ def get_products(page=1,replace=0,order_number="", skip_orders=[]):
             # if exists_cat[0][0] == 0:
             # print variant,line_item['variant_id']
             # print line_item
-            if not variant:
+            variant = {}
+            if not variant_id:
                 variant = {'product_name': order['name'], 'sku': '',
                            'description': order['name']}
             else:
