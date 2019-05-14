@@ -13,7 +13,7 @@ def get_products(page=1,replace=0,order_number="", skip_orders=[]):
 
     # print orders
     if order_number == "":
-        page_limit = 10
+        page_limit = 37
     else:
         page_limit = 2
     start_page = page
