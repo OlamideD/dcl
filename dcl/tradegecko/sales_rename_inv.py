@@ -64,6 +64,7 @@ def make_delivery(fulfilled_items,current_order,datepaid):
 
 
 status_map = {"draft":0,"received":1,"finalized":1,"fulfilled":1,"active":0}
+# bench --site dcl3 execute dcl.tradegecko.sales_rename_inv.gecko_orders --kwargs "{'page':1,'replace':1,'order_number':'SO3536'}"
 # bench --site dcl2 execute dcl.tradegecko.sales.gecko_orders --kwargs "{'page':1,'replace':0,'order_number':'SO5271'}"
 def gecko_orders(page=1,replace=0,order_number="", skip_orders=[]):
     access_token = "6daee46c0b4dbca8baac12dbb0e8b68e93934608c510bb41a770bbbd8c8a7ca5"
@@ -114,10 +115,14 @@ def gecko_orders(page=1,replace=0,order_number="", skip_orders=[]):
 
             print "########################### PAGE ", start_page-1, " ###########################"
             print o
+            total_discount_amt = 0.0
+            total_tax_amt = 0.0
 
             exists_po = frappe.db.sql("""SELECT Count(*) FROM `tabSales Order` WHERE name=%s""", (o['order_number']))
             if exists_po[0][0] > 0:
                 skip = 1
+                if replace == 1:
+                    skip = 0
                 if o['invoices'] != []:
                     for _inv in o['invoices']:
                         print "checking ",_inv['invoice_number']
@@ -130,15 +135,21 @@ def gecko_orders(page=1,replace=0,order_number="", skip_orders=[]):
                             # check if discounts where applied
                             exists_inv = frappe.get_doc("Sales Invoice", exists_inv[0][0])
                             total_discount_amt = 0.0
+                            total_tax_amt = 0.0
                             xero_inv = test_xero(_inv['invoice_number'])
                             so_inv = xero_inv
                             # time.sleep(5)
                             for x in xero_inv[0]['LineItems']:
                                 total_discount_amt += x['DiscountAmount']
+                                total_tax_amt += x['TaxAmount']
 
                             if exists_inv.discount_amount < total_discount_amt:
                                 skip = 0
                                 print "no discount"
+
+                            if total_tax_amt > 0.0:
+                                skip = 0
+                                print "no tax"
 
             elif exists_po[0][0] == 0:
                 skip = 0 #dont skip
@@ -223,9 +234,18 @@ def gecko_orders(page=1,replace=0,order_number="", skip_orders=[]):
 
 
             current_order = o["order_number"]
+            tax_amount = 0.0
             for i in o['order_line_item_ids']:
                 time.sleep(1)
                 line_item = tg.order_line_item.get(i)['order_line_item']
+                print line_item
+                if line_item["tax_rate"]:
+                    tax_amount += (round(float(line_item["price"])) * float(line_item["quantity"])) \
+                                  * (float(line_item["tax_rate"]) / 100.00)
+                    print (round(float(line_item["price"])) * float(line_item["quantity"]))
+                    print (float(line_item["tax_rate"]) / 100.00)
+                    print "Tax Amount", tax_amount
+
                 # print line_item
                 exists_cat = frappe.db.sql("""SELECT Count(*),item_code,item_name,description FROM `tabItem`
                                         WHERE variant_id=%s""",
@@ -314,7 +334,7 @@ def gecko_orders(page=1,replace=0,order_number="", skip_orders=[]):
 
             # print SI_items
 
-            # print SI_items
+            print SI_items
             if SI_items:
                 time.sleep(1)
                 supplier_company = tg.company.get(o['company_id'])['company']
@@ -332,6 +352,12 @@ def gecko_orders(page=1,replace=0,order_number="", skip_orders=[]):
                 sales_team = []
                 if sales_person_name:
                     sales_team = [{"sales_person":sales_person_name,"allocated_percentage":100.00}]
+
+                taxes = []
+                if tax_amount or total_tax_amt:
+                    tax_amount = tax_amount or total_tax_amt
+                    taxes.append({"charge_type": "Actual", "tax_amount": tax_amount, "account_head": "VAT - DCL",
+                                  "description": "tax"})
                 SI_dict = {"doctype": "Sales Order",
                            "title": supplier_company['name'],
                            "customer": supplier_company['name'],
@@ -341,6 +367,7 @@ def gecko_orders(page=1,replace=0,order_number="", skip_orders=[]):
                            "due_date": created_at.date(),
                            "delivery_date": created_at.date(),
                            "items": SI_items,
+                           "taxes":taxes,
                            "docstatus": status_map[o["status"]],
                            "inflow_file": current_order,
                            "currency": currency['iso'],
@@ -390,40 +417,9 @@ def gecko_orders(page=1,replace=0,order_number="", skip_orders=[]):
                 frappe.db.commit()
                 rename_doc("Sales Order", SI_created.name, o['order_number'], force=True)
                 frappe.db.commit()
+                print "done submitting and renaming."
 
                 if o['status'] != "draft" and o['status'] != "active":
-                    # if o['invoices']:
-                    #     for item in SI_items:
-                    #         #check stocks first
-                    #         #get_balance_qty_from_sle
-                    #         #/home/jvfiel/frappe-v11/apps/erpnext/erpnext/stock/stock_balance.py
-                    #         from erpnext.stock.stock_balance import get_balance_qty_from_sle,get_reserved_qty
-                    #         get_bal = get_balance_qty_from_sle(item["item_code"],to_warehouse['label'] + " - DCL")
-                    #         reserved_qty = get_reserved_qty(item["item_code"],to_warehouse['label'] + " - DCL")
-                    #         print item["item_code"], to_warehouse['label'] + " - DCL"
-                    #         print "rsvd qty ", reserved_qty
-                    #         print "bal", (float(get_bal))
-                    #         print "need", item['qty']
-                    #         net_bal = (float(get_bal)-float(reserved_qty)-item['qty'])
-                    #         print "net bal", net_bal
-                    #
-                    #         reqd_qty = 0
-                    #         if net_bal < 0:
-                    #             # reqd_qty = float(item['qty']) - abs(float(item['qty']))
-                    #             # print "itm qty", float(item['qty'])
-                    #             reqd_qty = abs(net_bal)
-                    #             # reqd_qty = abs(net_bal)+float(item['qty'])
-                    #             print "req qty", reqd_qty
-                    #             make_stock_entry(item_code=item["item_code"], qty=reqd_qty,
-                    #                              to_warehouse=to_warehouse['label'] + " - DCL",
-                    #                              valuation_rate=1, remarks="This is affected by data import. ",
-                    #                              posting_date=created_at.date(),
-                    #                              posting_time=str(created_at.time()),
-                    #                              set_posting_time=1, inflow_file=current_order)
-                    #             frappe.db.commit()
-                    #             print "qty after stock ent", get_balance_qty_from_sle(item["item_code"],to_warehouse['label'] + " - DCL")
-                    #         elif net_bal == 0:
-                    #             reqd_qty = float(item['qty'])
                     for i in o['invoices']:
                         if so_inv == None:
                             inv = test_xero(i['invoice_number'])
