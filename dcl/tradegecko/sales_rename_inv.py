@@ -420,7 +420,8 @@ def gecko_orders(page=1,replace=0,order_number="", skip_orders=[]):
                 print "done submitting and renaming."
 
                 if o['status'] != "draft" and o['status'] != "active":
-                    for i in o['invoices']:
+                    if o['invoices']:
+                        i = o['invoices'][0]
                         if so_inv == None:
                             inv = test_xero(i['invoice_number'])
                         else:
@@ -538,32 +539,6 @@ def make_invoice(sales_order_name,datepaid,xero_inv):
     pi.save()
     pi.submit()
     frappe.db.commit()
-    # if status == "Paid":
-    #     if sales_order_name:
-
-    # if pi.grand_total > 0.0:
-    #     so = frappe.get_doc("Sales Order", sales_order_name)
-    #     print "             Making Payment request. Per billed",so.per_billed
-    #     # if flt(so.per_billed) != 100:
-    #     payment_request = make_payment_request(dt="Sales Invoice", dn=pi.name, recipient_id="",
-    #                                            submit_doc=True, mute_email=True, use_dummy_message=True,
-    #                                            inflow_file=SI_dict["inflow_file"],grand_total=pi.rounded_total,
-    #                                            posting_date=datepaid.date(), posting_time=str(datepaid.time()))
-    #
-    #     if SI_dict["PaymentStatus"] != "Invoiced":
-    #         payment_entry = frappe.get_doc(make_payment_entry(payment_request.name))
-    #         payment_entry.posting_date = datepaid.date()
-    #         payment_entry.posting_time = str(datepaid.time())
-    #         payment_entry.set_posting_time = 1
-    #         # print "             ",pi.rounded_total,payment_entry.paid_amount
-    #         if SI_dict["PaymentStatus"] == "Paid":
-    #             payment_entry.paid_amount = pi.rounded_total
-    #
-    #         else:
-    #             payment_entry.paid_amount = float(SI_dict["AmountPaid"])
-    #         payment_entry.inflow_file = SI_dict["inflow_file"]
-    #         payment_entry.submit()
-    #         frappe.db.commit()
     return pi
 
 
