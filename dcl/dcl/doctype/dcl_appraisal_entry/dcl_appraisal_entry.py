@@ -15,7 +15,8 @@ class DCLAppraisalEntry(Document):
         scores = 0.0
         for k in self.kpi:
             total += 5.0
-            scores += k.average_rating
+            if k.average_rating:
+                scores += k.average_rating
 
         if scores:
             self.remark_score = (scores / total) * 100.0
