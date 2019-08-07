@@ -46,6 +46,7 @@ frappe.ui.form.on('DCL Appraisal Entry', {
 						var newrow = frm.add_child("kpi");
 						newrow.tasks = data.message[i].tasks;
 						newrow.kpi = data.message[i].kpi;
+						newrow.section = data.message[i].section;
 						cur_frm.refresh_field("kpi");
 					}
 				}

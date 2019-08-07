@@ -2,7 +2,7 @@ import frappe
 
 @frappe.whitelist()
 def get_kpi(template):
-    return frappe.db.sql("""SELECT tasks,kpi FROM `tabDCL Appraisal KPI` WHERE parent=%s ORDER BY idx""",(template),as_dict=True)
+    return frappe.db.sql("""SELECT tasks,kpi,section FROM `tabDCL Appraisal KPI` WHERE parent=%s ORDER BY idx""",(template),as_dict=True)
 
 
 @frappe.whitelist()

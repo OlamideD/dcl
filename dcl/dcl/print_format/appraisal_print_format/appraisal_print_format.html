@@ -95,10 +95,18 @@
 4. Competent above required competence, 5. Mastery.</b>
 </p>
 
+
+ {% set current_section = 'hello world' %}
+
+
  <table border="1" width="100%">
+      {% for row in doc.kpi %}
+
+     {% if (current_section != row.section) %}
+     {% set current_section = row.section %}
         <tr>
 <td width="60%">
-        <b>Section A</b>
+        <b>{{ row.section }}</b>
 </td>
             <td colspan="4">
                 <b>ACTUAL PERFORMANCE</b>
@@ -121,21 +129,25 @@
              Average Rating
          </td>
      </tr>
-     {%- for row in doc.kpi -%}
+{% endif %}
      <tr>
           <td>
                 {{row.tasks}}
          </td>
          <td>
+             {{ row.employee_rating }}
          </td>
          <td>
+              {{ row.supver_rating }}
          </td>
          <td>
+              {{ row.mgt_rating }}
          </td>
          <td>
+              {{ row.average_rating }}
          </td>
      </tr>
-     {%- endfor -%}
+     {% endfor %}
  </table>
 <br>
 <br>
