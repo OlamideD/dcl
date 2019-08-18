@@ -48,6 +48,8 @@ frappe.ui.form.on('DCL Appraisal Entry', {
 						newrow.kpi = data.message[i].kpi;
 						newrow.section = data.message[i].section;
 						cur_frm.refresh_field("kpi");
+
+
 					}
 				}
 			});
@@ -76,6 +78,18 @@ frappe.ui.form.on('DCL Appraisal Entry', {
 					}
 				}
 			});
+
+
+			frappe.call({
+            "method": "frappe.client.get",
+            args: {
+                doctype: "Appraisal Template",
+                name: frm.doc.appraisal_template
+            },
+            callback: function (data) {
+            	cur_frm.set_value("appraiser",data.message.created_by);
+			}});
+
 		}
 	}
 });
