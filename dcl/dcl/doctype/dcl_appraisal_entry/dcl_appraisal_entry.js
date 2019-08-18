@@ -83,11 +83,12 @@ frappe.ui.form.on('DCL Appraisal Entry', {
 			frappe.call({
             "method": "frappe.client.get",
             args: {
-                doctype: "Appraisal Template",
+                doctype: "DCL Appraisal Template",
                 name: frm.doc.appraisal_template
             },
             callback: function (data) {
-            	cur_frm.set_value("appraiser",data.message.created_by);
+            	console.log(data);
+            	cur_frm.set_value("appraiser",data.message.owner);
 			}});
 
 		}
