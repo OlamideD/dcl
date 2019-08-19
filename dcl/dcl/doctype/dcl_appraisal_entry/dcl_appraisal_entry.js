@@ -39,10 +39,10 @@ frappe.ui.form.on('DCL Appraisal Entry', {
 				},
 
 				callback: function (data) {
-					console.log(data);
+					// console.log(data);
 					for(var i=0;i<data.message.length;i++)
 					{
-						console.log(data.message[i]);
+						// console.log(data.message[i]);
 						var newrow = frm.add_child("kpi");
 						newrow.tasks = data.message[i].tasks;
 						newrow.kpi = data.message[i].kpi;
@@ -68,10 +68,10 @@ frappe.ui.form.on('DCL Appraisal Entry', {
 				},
 
 				callback: function (data) {
-					console.log(data);
+					// console.log(data);
 					for(var i=0;i<data.message.length;i++)
 					{
-						console.log(data.message[i]);
+						// console.log(data.message[i]);
 						var newrow = frm.add_child("remarks");
 						newrow.topic = data.message[i].topic;
 						cur_frm.refresh_field("remarks");
@@ -87,8 +87,18 @@ frappe.ui.form.on('DCL Appraisal Entry', {
                 name: frm.doc.appraisal_template
             },
             callback: function (data) {
-            	console.log(data);
+            	// console.log(data);
             	cur_frm.set_value("appraiser",data.message.owner);
+				console.log(cur_frm.doc.appraiser);
+					frappe.call({
+						"method": "dcl.dcl.doctype.dcl_appraisal_entry.get_user_full_name",
+						args: {
+							user:cur_frm.doc.appraiser},
+							 callback: function (data) {
+								 console.log(data);
+								 cur_frm.set_value("appraiser_name",data.message[0][0])
+							 }
+					});
 			}});
 
 		}
