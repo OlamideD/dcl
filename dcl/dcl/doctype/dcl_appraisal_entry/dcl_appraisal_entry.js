@@ -99,6 +99,7 @@ frappe.ui.form.on('DCL Appraisal Entry', {
 								 cur_frm.set_value("appraiser_name",data.message[0][0])
 							 }
 					});
+				cur_frm.set_value("period_covered",data.message.period_covered);
 			}});
 
 		}
