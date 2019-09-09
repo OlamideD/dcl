@@ -40,9 +40,20 @@ frappe.ui.form.on('DCL Appraisal Entry', {
 
 				callback: function (data) {
 					// console.log(data);
+
+					var sections = [];
+
 					for(var i=0;i<data.message.length;i++)
 					{
 						// console.log(data.message[i]);
+						if(!sections.includes(data.message[i].section)) {
+							var newrow = frm.add_child("kpi");
+							newrow.tasks = data.message[i].section;
+							newrow.section = "xsectionx";
+
+							sections.push(data.message[i].section);
+						}
+
 						var newrow = frm.add_child("kpi");
 						newrow.tasks = data.message[i].tasks;
 						newrow.kpi = data.message[i].kpi;

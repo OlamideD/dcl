@@ -101,6 +101,8 @@
 
  <table border="1" width="100%">
       {% for row in doc.kpi %}
+        {% if (row.section == "xsectionx") %}
+     {% else %}
 
      {% if (current_section != row.section) %}
      {% set current_section = row.section %}
@@ -147,6 +149,7 @@
               {{ row.average_rating }}
          </td>
      </tr>
+     {% endif %}
      {% endfor %}
  </table>
 <br>
