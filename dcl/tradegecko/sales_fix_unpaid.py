@@ -437,8 +437,8 @@ def test_xero(id="INV4093"):
     # print rsa_key
     credentials = PrivateCredentials(consumer_key, rsa_key)
     xero = Xero(credentials)
-    # invoices = xero.invoices.filter(raw='AmountDue > 0')
-    invoices = xero.invoices.filter(InvoiceNumber="INV4093")
+    invoices = xero.invoices.filter(raw='AmountDue > 0')
+    # invoices = xero.invoices.filter(InvoiceNumber="INV4093")
     for inv in invoices:
         print inv
         inv = xero.invoices.get(inv['InvoiceNumber'])[0]
