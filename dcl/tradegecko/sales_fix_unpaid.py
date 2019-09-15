@@ -478,7 +478,7 @@ def test_xero(id="INV4093"):
                 payment_entry.inflow_file = inv['Reference']
                 payment_entry.submit()
 
-        break
+        # break
 
 
 def make_invoice(sales_order_name,datepaid,xero_inv):
