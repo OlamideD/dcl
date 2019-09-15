@@ -420,8 +420,8 @@ Consumer Secret: ONCAAWFW2ZWP6KHLXVAWPTNXSJXHAW
 """
 
 
-# bench --site dcl2 execute dcl.tradegecko.sales.test_xero
-def test_xero(id='INV4093'):
+# bench --site dcl3 execute dcl.tradegecko.sales_fix_unpaid.test_xero
+def test_xero(id="INV4093"):
     # from xero import Xero
     # from xero.auth import PublicCredentials
     consumer_key = "06RRGPYM4SJXFEMRODT6F0GYJ42UKA"
@@ -437,8 +437,48 @@ def test_xero(id='INV4093'):
     # print rsa_key
     credentials = PrivateCredentials(consumer_key, rsa_key)
     xero = Xero(credentials)
-    return xero.invoices.get(str(id))
-        # break
+    # invoices = xero.invoices.filter(raw='AmountDue > 0')
+    invoices = xero.invoices.filter(InvoiceNumber="INV4093")
+    for inv in invoices:
+        print inv
+        inv = xero.invoices.get(inv['InvoiceNumber'])[0]
+        inv_name = frappe.db.sql("""SELECT name FROM `tabSales Invoice`
+                                            WHERE docstatus=1 AND outstanding_amount = 0.0
+                                            and name=%s""",(inv['InvoiceNumber']))
+        print ">>>>>>>>>>>", inv_name
+        if inv_name != ():
+
+            # created_at = parser.parse(inv["Date"])
+            created_at = inv["Date"]
+
+            # remove_imported_data(inv['InvoiceNumber'])
+            remove_imported_data(inv['Reference'])
+
+
+            pi = make_invoice(inv['Reference'], created_at, inv)
+            # print inv
+            frappe.db.commit()
+            rename_doc("Sales Invoice", pi.name, inv['InvoiceNumber'], force=True)
+            frappe.db.commit()
+
+
+            if inv['AmountPaid']:
+                payment_request = make_payment_request(dt="Sales Invoice", dn=inv['InvoiceNumber'], recipient_id="",
+                                                       submit_doc=True, mute_email=True, use_dummy_message=True,
+                                                       grand_total=float(inv['AmountPaid']),
+                                                       posting_date=created_at.date(),
+                                                       posting_time=str(created_at.time()),
+                                                       inflow_file=inv['Reference'])
+
+                payment_entry = frappe.get_doc(make_payment_entry(payment_request.name))
+                payment_entry.posting_date = created_at.date()
+                payment_entry.posting_time = str(created_at.time())
+                payment_entry.set_posting_time = 1
+                payment_entry.paid_amount = inv['AmountPaid']
+                payment_entry.inflow_file = inv['Reference']
+                payment_entry.submit()
+
+        break
 
 
 def make_invoice(sales_order_name,datepaid,xero_inv):
@@ -449,11 +489,16 @@ def make_invoice(sales_order_name,datepaid,xero_inv):
     #     datepaid = parser.parse(datepaid)
     # print SI_dict["inflow_file"]
     total_discount_amt = 0.0
-    for x in xero_inv[0]['LineItems']:
+    print ">>>>>>>>>>>>>", sales_order_name
+    for x in xero_inv['LineItems']:
         total_discount_amt += x['DiscountAmount']
     print total_discount_amt
     pi = make_purchase_invoice(sales_order_name)
     print pi.grand_total
+    address = frappe.db.sql("""SELECT `tabAddress`.name FROM `tabAddress`
+INNER JOIN `tabDynamic Link` ON `tabDynamic Link`.parent=`tabAddress`.name
+WHERE link_name=%s""",(pi.customer))
+    pi.shipping_address_name = address[0][0]
     pi.inflow_file = sales_order_name
     pi.posting_date = datepaid.date()
     pi.due_date = datepaid.date()
@@ -523,25 +568,25 @@ def remove_imported_data(file,force=0):
 
     frappe.db.commit()
 
-    if force == 1:
-        SIs = frappe.db.sql("""SELECT name FROM `tabDelivery Note`""")
-    else:
-        SIs = frappe.db.sql("""SELECT name FROM `tabDelivery Note` WHERE inflow_file=%s""", (file))
-
-    for i,si in enumerate(SIs):
-        si_doc = frappe.get_doc("Delivery Note", si[0])
-        print "removing: ", si_doc.name
-        if si_doc.docstatus == 1:
-            si_doc.cancel()
-        si_doc.delete()
-        if counter >= stop:
-            print "Commit"
-            # frappe.db.commit()
-            counter = 0
-        counter += 1
-        print counter
-
-    frappe.db.commit()
+    # if force == 1:
+    #     SIs = frappe.db.sql("""SELECT name FROM `tabDelivery Note`""")
+    # else:
+    #     SIs = frappe.db.sql("""SELECT name FROM `tabDelivery Note` WHERE inflow_file=%s""", (file))
+    #
+    # for i,si in enumerate(SIs):
+    #     si_doc = frappe.get_doc("Delivery Note", si[0])
+    #     print "removing: ", si_doc.name
+    #     if si_doc.docstatus == 1:
+    #         si_doc.cancel()
+    #     si_doc.delete()
+    #     if counter >= stop:
+    #         print "Commit"
+    #         # frappe.db.commit()
+    #         counter = 0
+    #     counter += 1
+    #     print counter
+    #
+    # frappe.db.commit()
 
     if force == 1:
         SIs = frappe.db.sql("""SELECT name FROM `tabSales Invoice`""")
@@ -564,39 +609,39 @@ def remove_imported_data(file,force=0):
 
     frappe.db.commit()
 
-    if force == 1:
-        SIs = frappe.db.sql("""SELECT name FROM `tabSales Order`""")
-    else:
-        SIs = frappe.db.sql("""SELECT name FROM `tabSales Order` WHERE inflow_file=%s""",(file))
-
-    for i,si in enumerate(SIs):
-        si_doc = frappe.get_doc("Sales Order", si[0])
-        if si_doc.docstatus == 1:
-            si_doc.cancel()
-        si_doc.delete()
-        if counter >= stop:
-            print "Commit"
-            # frappe.db.commit()
-            counter = 0
-        counter += 1
-
-    frappe.db.commit()
-
-    if force == 1:
-        SIs = frappe.db.sql("""SELECT name FROM `tabStock Entry`""")
-    else:
-        SIs = frappe.db.sql("""SELECT name FROM `tabStock Entry` WHERE inflow_file=%s""",(file))
-    print "*removing dns*"
-    print SIs
-    for i,si in enumerate(SIs):
-        si_doc = frappe.get_doc("Stock Entry", si[0])
-        if si_doc.docstatus == 1:
-            si_doc.cancel()
-        si_doc.delete()
-        if counter >= stop:
-            print "Commit"
-            # frappe.db.commit()
-            counter = 0
-        counter += 1
+    # if force == 1:
+    #     SIs = frappe.db.sql("""SELECT name FROM `tabSales Order`""")
+    # else:
+    #     SIs = frappe.db.sql("""SELECT name FROM `tabSales Order` WHERE inflow_file=%s""",(file))
+    #
+    # for i,si in enumerate(SIs):
+    #     si_doc = frappe.get_doc("Sales Order", si[0])
+    #     if si_doc.docstatus == 1:
+    #         si_doc.cancel()
+    #     si_doc.delete()
+    #     if counter >= stop:
+    #         print "Commit"
+    #         # frappe.db.commit()
+    #         counter = 0
+    #     counter += 1
+    #
+    # frappe.db.commit()
+    #
+    # if force == 1:
+    #     SIs = frappe.db.sql("""SELECT name FROM `tabStock Entry`""")
+    # else:
+    #     SIs = frappe.db.sql("""SELECT name FROM `tabStock Entry` WHERE inflow_file=%s""",(file))
+    # print "*removing dns*"
+    # print SIs
+    # for i,si in enumerate(SIs):
+    #     si_doc = frappe.get_doc("Stock Entry", si[0])
+    #     if si_doc.docstatus == 1:
+    #         si_doc.cancel()
+    #     si_doc.delete()
+    #     if counter >= stop:
+    #         print "Commit"
+    #         # frappe.db.commit()
+    #         counter = 0
+    #     counter += 1
 
     frappe.db.commit()
