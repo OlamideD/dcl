@@ -498,7 +498,8 @@ def make_invoice(sales_order_name,datepaid,xero_inv):
     address = frappe.db.sql("""SELECT `tabAddress`.name FROM `tabAddress`
 INNER JOIN `tabDynamic Link` ON `tabDynamic Link`.parent=`tabAddress`.name
 WHERE link_name=%s""",(pi.customer))
-    pi.shipping_address_name = address[0][0]
+    if address:
+        pi.shipping_address_name = address[0][0]
     pi.inflow_file = sales_order_name
     pi.posting_date = datepaid.date()
     pi.due_date = datepaid.date()
