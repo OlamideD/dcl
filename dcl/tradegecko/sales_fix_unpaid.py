@@ -445,8 +445,10 @@ def test_xero(id="INV4093"):
         inv_name = frappe.db.sql("""SELECT name FROM `tabSales Invoice`
                                             WHERE docstatus=1 AND outstanding_amount = 0.0
                                             and name=%s""",(inv['InvoiceNumber']))
+
+        exists_so = frappe.db.sql("""SELECT Count(*) FROM `tabSales Order` WHERE name=%s""",(inv['InvoiceNumber']))
         print ">>>>>>>>>>>", inv_name
-        if inv_name != ():
+        if inv_name != () and exists_so[0][0] != 0:
 
             # created_at = parser.parse(inv["Date"])
             created_at = inv["Date"]
