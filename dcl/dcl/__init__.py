@@ -188,8 +188,8 @@ def items_import(file="1-200000.csv"):
             print e
 
 
-        if i==10:
-            break
+        # if i==10:
+        #     break
 
     print " *** DONE ***"
     print " *** DONE ***"
