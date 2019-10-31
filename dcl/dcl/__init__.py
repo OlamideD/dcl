@@ -98,3 +98,99 @@ def get_party_addresses_and_contact(party_type, party, party_group):
 
                 data.append(result)
     return data
+
+
+#dcl.dcl.items_import
+def items_import(file="1-200000.csv"):
+    import csv
+    import os
+    current_customer = ""
+    current_order = ""
+    SI_dict = {}
+    last_single_SI_dict = {}
+    SI_items = []
+    last_single_SI_items = []
+    paid_and_fulfilled_items = []
+    last_single_paid_and_fulfilled_items = []
+    fulfilled_items = []
+    last_single_fulfilled_items = []
+    paid_items = []
+    unpaid_items = []
+    last_single_paid_items = []
+    paid_pi = {}
+    # input_file = csv.DictReader(open(os.path.dirname(os.path.abspath(__file__))+'/data/inFlow_PurchaseOrder_test.csv'))
+    input_file = csv.DictReader(open(os.path.dirname(os.path.abspath(__file__)) + '/data/' + file))
+
+    # current_customer = input_file[0]["Customer"]
+
+    income_accounts = "5111 - Cost of Goods Sold - DCL"
+    # income_accounts = "Sales - J"
+    cost_centers = "Main - DCL"
+    # cost_centers = "Main - J"
+
+    rows = list(input_file)
+    total_paid = 0.0
+    last_single_total_paid = 0.0
+    # print rows
+    totalrows = len(rows) - 1
+    for i, row in enumerate(rows):
+        print i, row
+
+
+        try:
+            frappe.get_doc({"doctype":"Manufacturer","short_name":row["Name"]}).insert()
+            frappe.db.commit()
+        except Exception as e:
+            print e
+
+        print "-----"
+
+        try:
+            frappe.get_doc({"doctype":"Item Group","item_group_name":row["Market"],"parent_item_group":"All Item Groups"}).insert()
+            frappe.db.commit()
+        except Exception as e:
+            print e
+
+        print "-----"
+
+        try:
+            frappe.get_doc(
+                {"doctype": "Supplier", "supplier_name": "Thomas Scientific","supplier_group":"All Supplier Groups"}).insert()
+            frappe.db.commit()
+        except Exception as e:
+            print e
+
+        print "-----"
+
+        try:
+            frappe.get_doc(
+                {"doctype": "UOM", "uom_name": row["UOM"]}).insert()
+            frappe.db.commit()
+        except Exception as e:
+            print e
+
+        print "-----"
+
+        try:
+            frappe.get_doc({"doctype":"Item",
+                            "manufacturer_part_no":row['Part#'],
+                            "item_name":row["Desc"],
+                            "description":row["Desc"],
+                            "item_code":row["ManSku"],
+                            "manufacturer":row["Name"],
+                            "uoms":
+                                [{"uom":row["UOM"],"conversion_factor":row["Factor"]}],
+                            "standard_rate":float(row[" Price "].replace("$",""))+(float(row[" Price "].replace("$",""))*2.5),
+                            "item_group":row["Market"],
+                            "supplier_items":[{"supplier":"Thomas Scientific"}]}).insert()
+        except Exception as e:
+            print e
+
+
+        if i==10:
+            break
+
+    print " *** DONE ***"
+    print " *** DONE ***"
+    print " *** DONE ***"
+    print " *** DONE ***"
