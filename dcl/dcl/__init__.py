@@ -146,7 +146,7 @@ def items_import(file="1-200000.csv"):
         print "-----"
 
         try:
-            frappe.get_doc({"doctype":"Item Group","item_group_name":row["Market"],"parent_item_group":"All Item Groups"}).insert()
+            frappe.get_doc({"doctype":"Item Group","item_group_name":row["Market"]+ " ("+row["Category"]+")","parent_item_group":"All Item Groups"}).insert()
             frappe.db.commit()
         except Exception as e:
             print e
@@ -182,7 +182,7 @@ def items_import(file="1-200000.csv"):
                             "uoms":
                                 [{"uom":row["UOM"],"conversion_factor":row["Factor"]}],
                             "standard_rate":float(row[" Price "].replace("$",""))+(float(row[" Price "].replace("$",""))*2.5),
-                            "item_group":row["Market"],
+                            "item_group":row["Market"]+ " ("+row["Category"]+")",
                             "supplier_items":[{"supplier":"Thomas Scientific"}]}).insert()
         except Exception as e:
             print e
