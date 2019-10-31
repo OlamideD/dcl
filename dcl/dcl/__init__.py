@@ -177,6 +177,7 @@ def items_import(file="1-200000.csv"):
                             "item_name":row["Desc"],
                             "description":row["Desc"],
                             "item_code":row["ManSku"],
+                            "sku":row["ManSku"],
                             "manufacturer":row["Name"],
                             "uoms":
                                 [{"uom":row["UOM"],"conversion_factor":row["Factor"]}],
