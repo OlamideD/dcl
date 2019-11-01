@@ -143,6 +143,12 @@ def items_import(file="1-200000.csv"):
         except Exception as e:
             print e
 
+        try:
+            frappe.get_doc({"doctype": "Brand", "brand": row["Name"]}).insert()
+            frappe.db.commit()
+        except Exception as e:
+            print e
+
         print "-----"
 
         try:
@@ -179,6 +185,7 @@ def items_import(file="1-200000.csv"):
                             "item_code":row["ManSku"],
                             "sku":row["ManSku"],
                             "manufacturer":row["Name"],
+                            "brand":row["Name"],
                             "uoms":
                                 [{"uom":row["UOM"],"conversion_factor":row["Factor"]}],
                             "standard_rate":float(row[" Price "].replace("$",""))+(float(row[" Price "].replace("$",""))*2.5),
