@@ -197,6 +197,9 @@ def items_import(file="1-200000.csv"):
 
         # if i==10:
         #     break
+        if i % 2000:
+            print "commit!"
+            frappe.db.commit()
 
     print " *** DONE ***"
     print " *** DONE ***"
