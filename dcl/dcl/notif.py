@@ -6,7 +6,7 @@ from datetime import timedelta
 @frappe.whitelist()
 def get_reminders(owner):
     msg = "Please be reminded of the following: "
-    reminders = frappe.db.sql("""SELECT document_type, document_link FROM `tabDCL Reminders` WHERE owner=%s AND remind_in <= %s""",(owner,str(frappe.utils.get_datetime())))
+    reminders = frappe.db.sql("""SELECT DISTINCT document_type, document_link FROM `tabDCL Reminders` WHERE owner=%s AND remind_in <= %s""",(owner,str(frappe.utils.get_datetime())))
 
     if reminders:
         for rem in reminders:
