@@ -31,53 +31,54 @@ def get_comments(doc,method):
     # if "remindme" in str(com['content']).replace(" ",""):
     #     print "remind me!"
 
-    index = doc.content.find('/remindme')
-    if index < 0:
-        index = doc.content.find('/remind me')
+    if doc.content:
+        index = doc.content.find('/remindme')
+        if index < 0:
+            index = doc.content.find('/remind me')
 
-    remind_type = ''
+        remind_type = ''
 
-    index_end = doc.content.find('day')
-    if index_end != -1:
-        remind_type = 'Day'
-    else:
-        index_end = doc.content.find('hr')
+        index_end = doc.content.find('day')
         if index_end != -1:
-            remind_type = 'Hr'
+            remind_type = 'Day'
+        else:
+            index_end = doc.content.find('hr')
+            if index_end != -1:
+                remind_type = 'Hr'
 
 
-    print index,index_end, remind_type
-    # message = com['content'].split(" ")
-    # print message
-    message = doc.content
-    print message[index:index_end]
-    message = message[index:index_end].split()
+        print index,index_end, remind_type
+        # message = com['content'].split(" ")
+        # print message
+        message = doc.content
+        print message[index:index_end]
+        message = message[index:index_end].split()
 
-    day_or_hr = 0
-    print message
-    for mess in message:
-        print mess
-        try:
-            day_or_hr = int(mess)
-        except:
-            pass
+        day_or_hr = 0
+        print message
+        for mess in message:
+            print mess
+            try:
+                day_or_hr = int(mess)
+            except:
+                pass
 
-    print "day or hr", day_or_hr
+        print "day or hr", day_or_hr
 
-    remind_in = frappe.utils.get_datetime()
-    if remind_type == "Day":
-        remind_in = remind_in + timedelta(days=day_or_hr)
-    elif remind_type == "Hr":
-        remind_in = remind_in + timedelta(hours=day_or_hr)
+        remind_in = frappe.utils.get_datetime()
+        if remind_type == "Day":
+            remind_in = remind_in + timedelta(days=day_or_hr)
+        elif remind_type == "Hr":
+            remind_in = remind_in + timedelta(hours=day_or_hr)
 
-    dict = doc.as_dict()
+        dict = doc.as_dict()
 
-    print dict
+        print dict
 
-    remind = frappe.get_doc({"doctype":"DCL Reminders",
-                             "email":"",
-                             "owner":doc.owner,
-                             "document_link":doc.reference_name,
-                             "document_type":doc.reference_doctype,
-                             "remind_in":remind_in})
-    remind.insert(ignore_permissions=True)
+        remind = frappe.get_doc({"doctype":"DCL Reminders",
+                                 "email":"",
+                                 "owner":doc.owner,
+                                 "document_link":doc.reference_name,
+                                 "document_type":doc.reference_doctype,
+                                 "remind_in":remind_in})
+        remind.insert(ignore_permissions=True)
