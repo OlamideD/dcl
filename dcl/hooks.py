@@ -100,11 +100,12 @@ doc_events = {
     },
     "Delivery Note": {
         "validate": "dcl.dcl.remove_in_words"
-    },
-    "Communication":
-        {
-            "after_insert":"dcl.dcl.notif.get_comments"
-        }
+    }
+    # ,
+    # "Communication":
+    #     {
+    #         "after_insert":"dcl.dcl.notif.get_comments"
+    #     }
 }
 
 # Scheduled Tasks
