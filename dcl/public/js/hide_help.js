@@ -9,16 +9,16 @@ $(function() {
 	//dropdown dropdown-help dropdown-mobile open
 	$("[data-type='help']").remove();
 
-	frappe.call({
-		method: "dcl.dcl.notif.get_reminders",
-		args: {
-			"owner": frappe.session.user
-		},
-		callback: function (r) {
-			if(r.message)
-			{
-				frappe.msgprint(r.message);
-			}
-		}
-	});
+	// frappe.call({
+	// 	method: "dcl.dcl.notif.get_reminders",
+	// 	args: {
+	// 		"owner": frappe.session.user
+	// 	},
+	// 	callback: function (r) {
+	// 		if(r.message)
+	// 		{
+	// 			frappe.msgprint(r.message);
+	// 		}
+	// 	}
+	// });
 });
