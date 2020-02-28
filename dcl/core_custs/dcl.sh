@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-root_path="~/erpnext/frappe-bench"
+root_path="/erpnext/frappe-bench"
 full_path=$root_path"/apps/dcl/dcl/core_custs/erpnext/footer_powered.html"
 full_path_dest=$root_path"/apps/erpnext/erpnext/templates/includes/footer/footer_powered.html"
 cp $full_path $full_path_dest
@@ -24,7 +24,7 @@ cp $root_path/apps/dcl/dcl/core_custs/erpnext/config/stock.py $root_path/apps/er
 
 
 cd &&
-cd ~/erpnext/frappe-bench &&
+cd /erpnext/frappe-bench &&
 rm -f $root_path/apps/erpnext/erpnext/config/accounts.pyc &&
 rm -f $root_path/apps/erpnext/erpnext/config/buying.pyc &&
 rm -f $root_path/apps/erpnext/erpnext/config/crm.pyc &&
